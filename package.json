@@ -7,21 +7,22 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:storefront":   "npm run dev --workspace=apps/storefront",
-    "dev:masterpanel":  "npm run dev --workspace=apps/masterpanel",
-    "dev:company":      "npm run dev --workspace=apps/company",
-    "dev":              "npm run dev --workspaces --if-present",
+    "dev:storefront": "npm run dev --workspace=apps/storefront",
+    "dev:masterpanel": "npm run dev --workspace=apps/masterpanel",
+    "dev:company": "npm run dev --workspace=apps/company",
+    "dev": "npm run dev --workspaces --if-present",
     "build:storefront": "npm run build --workspace=apps/storefront",
-    "build:masterpanel":"npm run build --workspace=apps/masterpanel",
-    "build:company":    "npm run build --workspace=apps/company",
-    "build":            "npm run build --workspaces --if-present",
-    "lint":             "npm run lint --workspaces --if-present",
-    "type-check":       "npm run type-check --workspaces --if-present"
+    "build:masterpanel": "npm run build --workspace=apps/masterpanel",
+    "build:company": "npm run build --workspace=apps/company",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present"
   },
   "devDependencies": {
     "typescript": "^5"
   },
   "overrides": {
-    "react-is": "^18.3.1"
+    "react-is": "^18.3.1",
+    "lightningcss": "1.32.0"
   }
 }
