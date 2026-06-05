@@ -20,5 +20,8 @@
   },
   "devDependencies": {
     "typescript": "^5"
+  },
+  "overrides": {
+    "react-is": "^18.3.1"
   }
 }

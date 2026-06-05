@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
     "@orizino/supabase",
   ],
 
+  // Mark @opentelemetry/api as external so the Netlify edge-function bundler
+  // doesn't try to inline it (it's provided by the runtime environment).
+  serverExternalPackages: ["@opentelemetry/api"],
+
   turbopack: {
     rules: {
       "*.otf": { loaders: ["file-loader"], as: "*.url" },
