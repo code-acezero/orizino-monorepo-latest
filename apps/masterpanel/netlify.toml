@@ -2,7 +2,7 @@
   # Build runs from repo root so npm workspaces resolve correctly.
   # "base" is left unset so Netlify clones from root.
   base    = "."
-  command = "npm install --legacy-peer-deps --include=optional --os=linux --libc=glibc && cd apps/masterpanel && npm run build"
+  command = "npm install --legacy-peer-deps --os=linux --libc=glibc && cd apps/masterpanel && npm run build"
   publish = "apps/masterpanel/.next"
 
 [build.environment]

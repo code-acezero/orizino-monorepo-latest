@@ -1,10 +1,10 @@
 [build]
   base    = "apps/storefront"
-  command = "npm install --legacy-peer-deps --include=optional && npm run build"
+  command = "npm install --legacy-peer-deps --os=linux --libc=glibc && npm run build"
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
   NPM_FLAGS    = "--legacy-peer-deps"
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
 
