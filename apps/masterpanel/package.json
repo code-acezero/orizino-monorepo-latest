@@ -14,6 +14,7 @@
     "@orizino/shared": "*",
     "@orizino/supabase": "*",
     "react-is": "^18.3.1",
+    "embla-carousel-react": "^8.6.0",
     "@orizino/ui": "*",
     "@opentelemetry/api": "^1.9.0",
     "@radix-ui/react-accordion": "^1.2.12",
