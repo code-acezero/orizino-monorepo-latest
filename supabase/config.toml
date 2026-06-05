@@ -1,0 +1,22 @@
+project_id = "oectjdngvrqnxwhnwfrt"
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.og-image]
+verify_jwt = false
+
+[functions.notify-live-support]
+verify_jwt = false
+
+[functions.generate-invoice]
+verify_jwt = false
+
+[functions.sync-shipments]
+verify_jwt = false
+
+[functions.archive-to-gdocs]
+verify_jwt = true
+
+[functions.gdocs-export-pdf]
+verify_jwt = true

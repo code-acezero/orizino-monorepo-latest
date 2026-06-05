@@ -1,0 +1,1 @@
+UPDATE site_settings SET value = jsonb_set(value::jsonb, '{name}', '"Agent Flow"') WHERE key='ai_agent_config';

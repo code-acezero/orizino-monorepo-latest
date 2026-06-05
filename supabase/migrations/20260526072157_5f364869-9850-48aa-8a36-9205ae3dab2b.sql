@@ -1,0 +1,1 @@
+UPDATE public.site_settings SET value = value - 'value' WHERE key='ai_agent_config' AND value ? 'value';
