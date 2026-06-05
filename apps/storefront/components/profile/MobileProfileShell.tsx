@@ -94,7 +94,7 @@ const MobileProfileShell: React.FC<Props> = (p) => {
       <header className="sticky top-0 z-[55] backdrop-blur-xl bg-background/85 border-b border-border/40">
         <div className="flex items-center justify-between px-2 h-14">
           <button
-            onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/home"))}
+            onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/"))}
             className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95 active:bg-secondary transition-transform"
             aria-label="Back"
           >

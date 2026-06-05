@@ -366,8 +366,20 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "Corporate",
     items: [
-      { title: "Staff", url: "/origin/corporate/staff", icon: Briefcase, section: "employees", adminOnly: true, description: "Admins & moderators" },
-      { title: "Audit Log", url: "/origin/corporate/audit-log", icon: ClipboardList, section: "employees", adminOnly: true, description: "Staff activity history" },
+      {
+        title: "Employees",
+        url: "/origin/employees",
+        icon: Users,
+        section: "employees",
+        adminOnly: true,
+        description: "Team members, presets & section access",
+        keywords: "employees staff team roles access sections permissions",
+        children: [
+          { title: "All employees", url: "/origin/employees?tab=members" },
+          { title: "Staff (legacy)", url: "/origin/corporate/staff" },
+          { title: "Audit Log", url: "/origin/corporate/audit-log" },
+        ],
+      },
     ],
   },
   {

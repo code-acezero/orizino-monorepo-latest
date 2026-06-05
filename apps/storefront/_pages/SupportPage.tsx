@@ -454,7 +454,7 @@ const SupportPage: React.FC = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/home" className="p-2 rounded-xl hover:bg-secondary transition-colors">
+          <Link to="/" className="p-2 rounded-xl hover:bg-secondary transition-colors">
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div className="flex items-center gap-3">

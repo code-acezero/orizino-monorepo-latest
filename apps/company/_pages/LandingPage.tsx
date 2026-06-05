@@ -12,6 +12,7 @@ import { storefrontHref } from "@/lib/cross-app-urls";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import LightBeams from "@/components/landing/LightBeams";
+import { CompanyNav } from "@/components/nav/CompanyNav";
 
 const HeroShowcase3D = lazy(() => import("@/components/landing/HeroShowcase3D"));
 

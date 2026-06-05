@@ -62,6 +62,7 @@ const PATH_TO_SECTION: Array<[RegExp, string]> = [
   [/^\/origin\/telegram(\/|$|\?)/, "settings"],
   // corporate
   [/^\/origin\/corporate(\/|$|\?)/, "employees"],
+  [/^\/origin\/employees(\/|$|\?)/, "employees"],
   // system
   [/^\/origin\/settings(\/|$|\?)/, "settings"],
   [/^\/origin\/db-health(\/|$|\?)/, "settings"],
@@ -120,9 +121,33 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
+  // Single-section staff: bypass /origin dashboard and go directly to their section
+  const singleSectionRedirect = useMemo(() => {
+    if (!staff || role === "admin" || location.pathname !== "/origin") return null;
+    const accessible = staff.accessible ?? [];
+    if (accessible.length !== 1) return null;
+    const sectionKey = accessible[0].key as string;
+    const SECTION_URLS: Record<string, string> = {
+      products: "/origin/products",
+      orders: "/origin/orders",
+      offline_orders: "/origin/orders",
+      customers: "/origin/customers",
+      affiliate: "/affiliate-hub",
+      seo: "/origin/seo",
+      storefront_ui: "/origin/branding",
+      portfolio: "/origin/landing",
+      ai: "/origin/ai-settings",
+      analytics: "/origin/customer-analytics",
+      employees: "/origin/employees",
+      settings: "/origin/settings",
+    };
+    return SECTION_URLS[sectionKey] ?? null;
+  }, [staff, role, location.pathname]);
+
   if (!user) return <Navigate to="/auth" replace />;
   if (!role) return <Navigate to="/" replace />;
   if (!allowed) return <Navigate to="/origin" replace />;
+  if (singleSectionRedirect) return <Navigate to={singleSectionRedirect} replace />;
 
   return (
     <AdminRoleContext.Provider value={role}>

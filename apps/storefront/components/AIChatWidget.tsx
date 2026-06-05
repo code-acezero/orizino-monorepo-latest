@@ -1246,7 +1246,7 @@ const AIChatWidget: React.FC = () => {
                           ) : (
                             <span className="text-2xl">{avatarEmoji || "🤖"}</span>
                           )}
-                          <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white/80" />
+
                         </div>
                         <motion.div
                           initial={{ opacity: 0, x: -8 }}

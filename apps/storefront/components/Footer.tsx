@@ -220,7 +220,7 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
             {/* Logo + brand title (with motto under) + link columns on the right */}
             <div className="grid grid-cols-12 gap-6 lg:gap-10 pt-2 pb-6 border-b border-border/40 items-center">
               {/* Logo + title block */}
-              <Link to="/home" className="col-span-12 md:col-span-5 flex items-center gap-4 lg:gap-5 group min-w-0">
+              <Link to="/" className="col-span-12 md:col-span-5 flex items-center gap-4 lg:gap-5 group min-w-0">
                 {logoUrl && (
                   <img
                     src={logoUrl}
@@ -346,7 +346,7 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
         <div className="px-2.5 sm:px-3">
           <div className="border border-border/40 bg-card/40 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/40">
-              <Link to="/home" className="inline-flex items-center gap-2 min-w-0">
+              <Link to="/" className="inline-flex items-center gap-2 min-w-0">
                 {logoUrl ? (
                   <img src={logoUrl} alt={siteName} className="w-5 h-5 rounded-full object-cover ring-1 ring-border/40 shrink-0" />
                 ) : (
@@ -405,7 +405,7 @@ const Footer: React.FC<FooterProps> = ({ variantOverride }) => {
           <div className="w-full border border-border/40 bg-card/40 overflow-hidden">
             <div className="grid grid-cols-12 gap-6 lg:gap-10 p-6 lg:p-8 border-b border-border/40">
               <div className="col-span-12 md:col-span-5 flex flex-col justify-between gap-4">
-                <Link to="/home" className="inline-flex items-center gap-3 group w-fit">
+                <Link to="/" className="inline-flex items-center gap-3 group w-fit">
                   {logoUrl ? (
                     <img src={logoUrl} alt={siteName} className="w-9 h-9 rounded-full object-cover ring-1 ring-border/40" />
                   ) : (

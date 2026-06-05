@@ -210,7 +210,7 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
           <div className="w-full max-w-[1440px] mx-auto px-4 lg:px-6">
             <div className="flex items-center h-14 lg:h-[58px] gap-3">
               {/* Logo */}
-              <Link to="/home" className="flex items-center gap-2 shrink-0 group">
+              <Link to="/" className="flex items-center gap-2 shrink-0 group">
               {logoUrl ? (
               <BrandImage src={logoUrl} alt={siteName} filter={logoFilter} customColor={logoTint} className={`w-8 h-8 ${logoShapeClass} relative transition-transform group-hover:scale-105 ${getLogoEffectClass(logoEffect)}`} />
                 ) : siteIconUrl ? (
@@ -270,8 +270,8 @@ const Navbar: React.FC<NavbarProps> = ({ bottomNavProductTray }) => {
 
               {/* Desktop nav links */}
               <div className="hidden lg:flex items-center gap-0.5">
-                <Link to="/home"
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${location.pathname === "/home" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                <Link to="/"
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${location.pathname === "/" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
                   {t("nav.home")}
                 </Link>
                 {/* Categories dropdown */}

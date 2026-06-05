@@ -29,7 +29,7 @@ interface BottomNavProps {
 }
 
 const NAV_ITEMS = [
-  { icon: Home, label: "Home", path: "/home" },
+  { icon: Home, label: "Home", path: "/" },
   { icon: LayoutGrid, label: "Categories", path: "__categories__" },
   { icon: ShoppingCart, label: "Cart", path: "/cart" },
   { icon: Heart, label: "Wishlist", path: "/wishlist" },
