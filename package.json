@@ -12,7 +12,7 @@
     "dev:company": "npm run dev --workspace=apps/company",
     "dev": "npm run dev --workspaces --if-present",
     "build:storefront": "npm run build --workspace=apps/storefront",
-    "build:masterpanel": "npm run build --workspace=apps/masterpanel",
+    "build:masterpanel": "npm install --os=linux --libc=glibc && npm run build --workspace=apps/masterpanel",
     "build:company": "npm run build --workspace=apps/company",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",

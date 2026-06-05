@@ -407,7 +407,7 @@ const AIChatWidget: React.FC = () => {
 
 
   const isAdminPage = location.pathname.startsWith("/origin");
-  const isLandingPage = location.pathname === "/";
+  const isLandingPage = false; // "/" is the storefront home, not a company landing page
 
   const { data: aiConfig } = useQuery({
     queryKey: ["ai-agent-config"],
