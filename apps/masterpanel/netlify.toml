@@ -1,7 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────
 # Masterpanel Netlify build config
 # REQUIRED NETLIFY UI SETTING: Set "Base directory" to  apps/masterpanel
-# (matching storefront / company pattern)
 # ─────────────────────────────────────────────────────────────────────
 [build]
   base    = "apps/masterpanel"
@@ -9,8 +8,14 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "22"
-  NPM_FLAGS    = "--legacy-peer-deps"
+  NODE_VERSION           = "22"
+  NPM_FLAGS              = "--legacy-peer-deps"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_URL,VITE_SUPABASE_PROJECT_ID"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

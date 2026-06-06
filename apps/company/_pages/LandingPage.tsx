@@ -48,12 +48,12 @@ interface LandingConfig {
 }
 
 const defaultConfig: LandingConfig = {
-  hero_title_line1: "WEAR THE",
-  hero_title_line2: "EXTRAORDINARY",
-  hero_subtitle: "Premium fashion, crafted for those who refuse to blend in.",
-  hero_badge: "New Collection",
-  hero_cta_primary: "Shop Now",
-  hero_cta_secondary: "Explore Orizino",
+  hero_title_line1: "",
+  hero_title_line2: "",
+  hero_subtitle: "",
+  hero_badge: "",
+  hero_cta_primary: "",
+  hero_cta_secondary: "",
   hero_bg_url: "",
   features: [],
   stats: [],
@@ -316,23 +316,9 @@ export default function LandingPage() {
     ShoppingBag: Package, Zap: Sparkles, Globe: Users, Heart: Star, RotateCcw: Truck,
   };
 
-  const defaultFeatures = [
-    { icon: "Shield", title: "Premium Quality", desc: "Every piece crafted to last a lifetime." },
-    { icon: "Truck", title: "Swift Delivery", desc: "Fast, reliable delivery worldwide." },
-    { icon: "Users", title: "Community", desc: "Built with and for our customers." },
-    { icon: "Sparkles", title: "Unique Design", desc: "Stand apart from the crowd." },
-  ];
-  const features = cfg.features.length > 0 ? cfg.features.slice(0, 4) : defaultFeatures;
+  const features = cfg.features.slice(0, 4);
 
-  const defaultStats = [
-    { value: "10K+", label: "Happy Customers" },
-    { value: "500+", label: "Products" },
-    { value: "50+", label: "Countries" },
-    { value: "100%", label: "Premium Quality" },
-  ];
-  const stats = cfg.show_stats && cfg.stats.length > 0
-    ? cfg.stats
-    : cfg.show_stats ? defaultStats : [];
+  const stats = cfg.show_stats ? cfg.stats : [];
 
   const storyCtaOpacity = useTransform(storyP, [0.82, 1], [0, 1]);
   const storyText = cfg.about_text || defaultConfig.about_text;
@@ -423,24 +409,30 @@ export default function LandingPage() {
               </motion.div>
             )}
 
-            <motion.h1
-              className="font-display font-black leading-[0.9] tracking-tight"
-              style={{ fontSize: "clamp(3.2rem, 11vw, 9.5rem)" }}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <span className="block text-white">{cfg.hero_title_line1 || "WEAR THE"}</span>
-              <span
-                className="block"
-                style={{
-                  WebkitTextStroke: "1.5px hsl(355,99%,38%)",
-                  color: "transparent",
-                }}
+            {(cfg.hero_title_line1 || cfg.hero_title_line2) && (
+              <motion.h1
+                className="font-display font-black leading-[0.9] tracking-tight"
+                style={{ fontSize: "clamp(1.8rem, 5.5vw, 4.5rem)" }}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               >
-                {cfg.hero_title_line2 || "EXTRAORDINARY"}
-              </span>
-            </motion.h1>
+                {cfg.hero_title_line1 && (
+                  <span className="block text-white">{cfg.hero_title_line1}</span>
+                )}
+                {cfg.hero_title_line2 && (
+                  <span
+                    className="block"
+                    style={{
+                      WebkitTextStroke: "1.5px hsl(355,99%,38%)",
+                      color: "transparent",
+                    }}
+                  >
+                    {cfg.hero_title_line2}
+                  </span>
+                )}
+              </motion.h1>
+            )}
 
             {cfg.hero_subtitle && (
               <motion.p
@@ -465,7 +457,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[hsl(355,99%,38%)] text-white font-semibold text-sm shadow-[0_0_35px_hsl(355,99%,38%,0.3)]"
                 >
-                  {cfg.hero_cta_primary || "Shop Now"} <ArrowRight className="w-4 h-4" />
+                  {cfg.hero_cta_primary} <ArrowRight className="w-4 h-4" />
                 </motion.span>
               </a>
               <a href="#story">
@@ -474,7 +466,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white/75 font-medium text-sm backdrop-blur-sm hover:text-white transition-colors"
                 >
-                  {cfg.hero_cta_secondary || "Explore Orizino"}
+                  {cfg.hero_cta_secondary}
                 </motion.span>
               </a>
             </motion.div>

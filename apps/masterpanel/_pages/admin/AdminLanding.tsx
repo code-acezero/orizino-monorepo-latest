@@ -69,6 +69,7 @@ const AdminLanding = () => {
   const qc = useQueryClient();
   const [form, setForm] = useState<LandingConfig>(DEFAULT);
   const [logoUrl, setLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
   const [splashVersion, setSplashVersion] = useState<number>(1);
   const [resetPending, setResetPending] = useState(false);
 
@@ -91,7 +92,7 @@ const AdminLanding = () => {
       const { data } = await supabase
         .from("site_settings")
         .select("key,value")
-        .in("key", ["logo_url", "splash_version"]);
+        .in("key", ["logo_url", "favicon_url", "splash_version"]);
       const map: Record<string, any> = {};
       data?.forEach((r) => {
         const v = r.value;
@@ -103,6 +104,7 @@ const AdminLanding = () => {
   useEffect(() => {
     if (!siteSettings) return;
     if (siteSettings.logo_url) setLogoUrl(String(siteSettings.logo_url));
+    if (siteSettings.favicon_url) setFaviconUrl(String(siteSettings.favicon_url));
     if (siteSettings.splash_version) setSplashVersion(Number(siteSettings.splash_version) || 1);
   }, [siteSettings]);
 
@@ -136,6 +138,23 @@ const AdminLanding = () => {
       qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
       qc.invalidateQueries({ queryKey: ["site-settings-landing"] });
       toast.success("Logo saved — company site will reflect the new logo");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+
+  /* ── Save favicon URL ── */
+  const saveFaviconMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const { error } = await supabase.from("site_settings").upsert(
+        { key: "favicon_url", value: url as any, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
+      toast.success("Favicon saved — company site will use the new favicon");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -484,6 +503,57 @@ const AdminLanding = () => {
                       disabled={saveLogoMutation.isPending}
                     >
                       {saveLogoMutation.isPending ? "Saving..." : "Save URL"}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+
+            {/* Favicon upload card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" /> Company Favicon
+                </CardTitle>
+                <CardDescription>
+                  The small icon shown in browser tabs and bookmarks for the company site.
+                  Use a square PNG or ICO, ideally 32×32 or 64×64 px.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {faviconUrl && (
+                  <div className="p-4 rounded-xl bg-[#080808] border border-border/30 flex items-center gap-4">
+                    <img src={faviconUrl} alt="Current favicon" className="h-8 w-8 object-contain" />
+                    <span className="text-xs text-muted-foreground font-mono truncate">{faviconUrl}</span>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Upload New Favicon</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Square PNG recommended (32×32 or 64×64). Will appear in the browser tab for the company site.
+                  </p>
+                  <ImageUpload
+                    bucket="site-assets"
+                    folder="branding"
+                    value={faviconUrl}
+                    onUploaded={(url) => {
+                      setFaviconUrl(url);
+                      saveFaviconMutation.mutate(url);
+                    }}
+                  />
+                </div>
+                {faviconUrl && (
+                  <div className="space-y-2">
+                    <Label>Direct URL</Label>
+                    <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://..." className="font-mono text-xs" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => saveFaviconMutation.mutate(faviconUrl)}
+                      disabled={saveFaviconMutation.isPending}
+                    >
+                      {saveFaviconMutation.isPending ? "Saving..." : "Save URL"}
                     </Button>
                   </div>
                 )}

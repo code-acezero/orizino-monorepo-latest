@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import SiteThemeProvider from "@/components/SiteThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
+import FaviconSync from "@/components/FaviconSync";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -39,6 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <LanguageProvider>
             <CurrencyProvider>
               <SiteThemeProvider />
+              <FaviconSync />
               {children}
               <Toaster />
             </CurrencyProvider>
