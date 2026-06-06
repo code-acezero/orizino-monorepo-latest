@@ -53,7 +53,7 @@ const defaultConfig: LandingConfig = {
   hero_subtitle: "Premium fashion, crafted for those who refuse to blend in.",
   hero_badge: "New Collection",
   hero_cta_primary: "Shop Now",
-  hero_cta_secondary: "Our Story",
+  hero_cta_secondary: "Explore Orizino",
   hero_bg_url: "",
   features: [],
   stats: [],
@@ -349,7 +349,7 @@ export default function LandingPage() {
           §1  CINEMATIC HERO — scroll zooms the world behind you
           ═══════════════════════════════════════════════════════════ */}
       <div ref={heroRef} style={{ height: "220vh" }}>
-        <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
+        <div className="sticky top-0 h-screen overflow-hidden flex items-center">
 
           {/* Background layer — scales slowly like a cinematic pull-back */}
           <motion.div
@@ -359,20 +359,31 @@ export default function LandingPage() {
             {heroBgUrl ? (
               <img src={heroBgUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="absolute inset-0 bg-[#080808]">
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(140deg, #010c17 0%, #030f1e 35%, #040e1a 65%, #020b15 100%)" }}
+              >
                 {/* Subtle noise grain */}
                 <div
-                  className="absolute inset-0 opacity-[0.025]"
+                  className="absolute inset-0 opacity-[0.03]"
                   style={{
                     backgroundImage:
                       "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
                     backgroundSize: "150px",
                   }}
                 />
-                {/* Crimson radial glow */}
+                {/* Mint-teal accent glows */}
                 <div
                   className="absolute inset-0"
-                  style={{ background: "radial-gradient(ellipse 60% 55% at 50% 50%, hsl(355,99%,38%,0.08), transparent)" }}
+                  style={{
+                    background:
+                      "radial-gradient(ellipse 60% 55% at 15% 55%, rgba(20,184,166,0.10) 0%, transparent 65%), radial-gradient(ellipse 40% 40% at 78% 25%, rgba(6,182,212,0.06) 0%, transparent 55%)",
+                  }}
+                />
+                {/* Glossy top-left highlight */}
+                <div
+                  className="absolute inset-0"
+                  style={{ background: "linear-gradient(170deg, rgba(255,255,255,0.025) 0%, transparent 45%)" }}
                 />
               </div>
             )}
@@ -395,7 +406,7 @@ export default function LandingPage() {
 
           {/* Hero content — scale + opacity driven by heroP */}
           <motion.div
-            className="relative z-10 text-center px-6 max-w-5xl mx-auto"
+            className="relative z-10 text-left px-8 sm:px-16 lg:px-24 max-w-3xl"
             style={{ scale: heroScale, opacity: heroOpacity, y: heroY }}
           >
             {cfg.hero_badge && (
@@ -433,7 +444,7 @@ export default function LandingPage() {
 
             {cfg.hero_subtitle && (
               <motion.p
-                className="mt-8 text-white/45 text-base sm:text-lg max-w-xl mx-auto font-light tracking-wide leading-relaxed"
+                className="mt-8 text-white/45 text-base sm:text-lg max-w-xl font-light tracking-wide leading-relaxed"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.9, duration: 0.8 }}
@@ -443,7 +454,7 @@ export default function LandingPage() {
             )}
 
             <motion.div
-              className="mt-10 flex flex-wrap gap-3 justify-center"
+              className="mt-10 flex flex-wrap gap-3"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1, duration: 0.7 }}
@@ -463,7 +474,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white/75 font-medium text-sm backdrop-blur-sm hover:text-white transition-colors"
                 >
-                  {cfg.hero_cta_secondary || "Our Story"}
+                  {cfg.hero_cta_secondary || "Explore Orizino"}
                 </motion.span>
               </a>
             </motion.div>
@@ -471,7 +482,7 @@ export default function LandingPage() {
 
           {/* Scroll cue */}
           <motion.div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 pointer-events-none"
+            className="absolute bottom-10 left-8 sm:left-16 flex flex-col items-center gap-1.5 pointer-events-none"
             style={{ opacity: heroOpacity }}
           >
             <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.8 }}>
@@ -904,23 +915,12 @@ export default function LandingPage() {
                   {cfg.cta_button || "Enter the Store"} <ArrowRight className="w-4 h-4" />
                 </motion.span>
               </a>
-              {!user && (
-                <a href="/auth">
-                  <motion.span
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="inline-flex items-center gap-2 px-9 py-4 rounded-full border border-white/20 text-white/65 font-medium text-sm hover:border-white/35 hover:text-white transition-all"
-                  >
-                    Create Account
-                  </motion.span>
-                </a>
-              )}
             </div>
           </motion.div>
         </section>
       )}
 
-      <Footer variantOverride="minimal" />
+      <Footer variantOverride="editorial" />
     </div>
   );
 }

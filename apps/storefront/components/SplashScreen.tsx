@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import BrandLoader from "./loaders/BrandLoader";
 
 interface SplashScreenProps {
@@ -7,7 +8,19 @@ interface SplashScreenProps {
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
-  return <BrandLoader show={visible} withBackdrop size={220} />;
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          key="splash"
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.65, ease: "easeOut" }}
+        >
+          <BrandLoader show withBackdrop size={220} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default SplashScreen;
