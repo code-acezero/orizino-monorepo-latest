@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TabsWithParam } from "@/components/admin/TabsWithParam";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/lib/app-toast";
-import { Rocket, Sparkles, Type, BarChart3, MessageCircle, Image as ImageIcon, Plus, Trash2, Target, BookOpen, Settings2 } from "lucide-react";
+import {
+  Rocket, Sparkles, Type, BarChart3, MessageCircle, Image as ImageIcon,
+  Plus, Trash2, Target, BookOpen, Settings2, RefreshCw, Upload, Layers,
+} from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 
 const iconOptions = ["ShoppingBag", "Shield", "Truck", "Sparkles", "Star", "Zap", "Globe", "Package", "Users", "Heart"];
@@ -66,7 +68,11 @@ const DEFAULT: LandingConfig = {
 const AdminLanding = () => {
   const qc = useQueryClient();
   const [form, setForm] = useState<LandingConfig>(DEFAULT);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [splashVersion, setSplashVersion] = useState<number>(1);
+  const [resetPending, setResetPending] = useState(false);
 
+  /* ── Landing config ── */
   const { data: config } = useQuery({
     queryKey: ["admin-landing-config"],
     queryFn: async () => {
@@ -74,16 +80,39 @@ const AdminLanding = () => {
       return (data?.value as any) || {};
     },
   });
-
   useEffect(() => {
     if (config && typeof config === "object") setForm({ ...DEFAULT, ...config });
   }, [config]);
 
+  /* ── Logo URL + splash version ── */
+  const { data: siteSettings } = useQuery({
+    queryKey: ["admin-site-settings-branding"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key,value")
+        .in("key", ["logo_url", "splash_version"]);
+      const map: Record<string, any> = {};
+      data?.forEach((r) => {
+        const v = r.value;
+        map[r.key] = typeof v === "object" && v !== null ? (v as any).value ?? v : v;
+      });
+      return map;
+    },
+  });
+  useEffect(() => {
+    if (!siteSettings) return;
+    if (siteSettings.logo_url) setLogoUrl(String(siteSettings.logo_url));
+    if (siteSettings.splash_version) setSplashVersion(Number(siteSettings.splash_version) || 1);
+  }, [siteSettings]);
+
+  /* ── Save landing config ── */
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("site_settings").upsert({
-        key: "landing_config", value: form as any, updated_at: new Date().toISOString(),
-      }, { onConflict: "key" });
+      const { error } = await supabase.from("site_settings").upsert(
+        { key: "landing_config", value: form as any, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
       if (error) throw error;
     },
     onSuccess: () => {
@@ -94,6 +123,44 @@ const AdminLanding = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  /* ── Save logo URL ── */
+  const saveLogoMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const { error } = await supabase.from("site_settings").upsert(
+        { key: "logo_url", value: url as any, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
+      qc.invalidateQueries({ queryKey: ["site-settings-landing"] });
+      toast.success("Logo saved — company site will reflect the new logo");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  /* ── Reset splash screen ── */
+  const handleResetSplash = async () => {
+    setResetPending(true);
+    try {
+      const newVersion = splashVersion + 1;
+      const { error } = await supabase.from("site_settings").upsert(
+        { key: "splash_version", value: newVersion as any, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+      if (error) throw error;
+      setSplashVersion(newVersion);
+      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
+      toast.success(`Splash reset to v${newVersion} — all visitors will see it again on next visit`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setResetPending(false);
+    }
+  };
+
+  /* ── Helpers ── */
   const updateFeature = (idx: number, field: string, value: string) => {
     const features = [...form.features];
     features[idx] = { ...features[idx], [field]: value };
@@ -130,18 +197,20 @@ const AdminLanding = () => {
       <TabsWithParam defaultTab="content" basePath="/origin/landing" className="space-y-4">
         <TabsList>
           <TabsTrigger value="content"><Rocket className="w-4 h-4 mr-1" /> Content</TabsTrigger>
-          <TabsTrigger value="sections"><Settings2 className="w-4 h-4 mr-1" /> Sections & Visibility</TabsTrigger>
+          <TabsTrigger value="sections"><Settings2 className="w-4 h-4 mr-1" /> Sections</TabsTrigger>
+          <TabsTrigger value="branding"><Layers className="w-4 h-4 mr-1" /> Logo & Splash</TabsTrigger>
         </TabsList>
 
-        {/* ═══ CONTENT TAB — all content in collapsible accordions ═══ */}
+        {/* ═══ CONTENT TAB ═══ */}
         <TabsContent value="content">
           <Card>
             <CardHeader>
               <CardTitle>Landing Page Content</CardTitle>
-              <CardDescription>Configure all sections of your landing page</CardDescription>
+              <CardDescription>Configure all sections of the company landing page</CardDescription>
             </CardHeader>
             <CardContent>
               <Accordion type="multiple" defaultValue={["hero"]} className="space-y-2">
+
                 {/* HERO */}
                 <AccordionItem value="hero" className="border rounded-xl px-4">
                   <AccordionTrigger className="text-sm font-semibold">
@@ -151,11 +220,11 @@ const AdminLanding = () => {
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Title Line 1</Label>
-                        <Input value={form.hero_title_line1} onChange={(e) => setForm({ ...form, hero_title_line1: e.target.value })} placeholder="Shop Smarter." />
+                        <Input value={form.hero_title_line1} onChange={(e) => setForm({ ...form, hero_title_line1: e.target.value })} placeholder="WEAR THE" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Title Line 2 (gradient)</Label>
-                        <Input value={form.hero_title_line2} onChange={(e) => setForm({ ...form, hero_title_line2: e.target.value })} placeholder="Live Better." />
+                        <Label>Title Line 2 (outline stroke)</Label>
+                        <Input value={form.hero_title_line2} onChange={(e) => setForm({ ...form, hero_title_line2: e.target.value })} placeholder="EXTRAORDINARY" />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -164,7 +233,7 @@ const AdminLanding = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Badge Text</Label>
-                      <Input value={form.hero_badge} onChange={(e) => setForm({ ...form, hero_badge: e.target.value })} placeholder="✨ Welcome..." />
+                      <Input value={form.hero_badge} onChange={(e) => setForm({ ...form, hero_badge: e.target.value })} placeholder="New Collection" />
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -194,8 +263,9 @@ const AdminLanding = () => {
                       <Input value={form.about_title} onChange={(e) => setForm({ ...form, about_title: e.target.value })} placeholder="Our Story" />
                     </div>
                     <div className="space-y-2">
-                      <Label>About Text</Label>
-                      <Textarea value={form.about_text} onChange={(e) => setForm({ ...form, about_text: e.target.value })} rows={4} placeholder="Tell your brand story..." />
+                      <Label>Brand Story Text</Label>
+                      <p className="text-xs text-muted-foreground">This text powers the cinematic word-reveal section. Make it punchy and expressive.</p>
+                      <Textarea value={form.about_text} onChange={(e) => setForm({ ...form, about_text: e.target.value })} rows={5} placeholder="We believe fashion is more than clothing — it is a language..." />
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -242,7 +312,7 @@ const AdminLanding = () => {
                       </div>
                       <div className="space-y-2">
                         <Label>CTA Link</Label>
-                        <Input value={form.showcase_cta_link} onChange={(e) => setForm({ ...form, showcase_cta_link: e.target.value })} placeholder="/home" />
+                        <Input value={form.showcase_cta_link} onChange={(e) => setForm({ ...form, showcase_cta_link: e.target.value })} placeholder="/" />
                       </div>
                     </div>
                   </AccordionContent>
@@ -277,7 +347,7 @@ const AdminLanding = () => {
                     {form.stats.map((s, i) => (
                       <div key={i} className="flex gap-3 items-center p-3 rounded-xl bg-secondary/30">
                         <Input value={s.value} onChange={(e) => updateStat(i, "value", e.target.value)} placeholder="10K+" className="w-32" />
-                        <Input value={s.label} onChange={(e) => updateStat(i, "label", e.target.value)} placeholder="Products" className="flex-1" />
+                        <Input value={s.label} onChange={(e) => updateStat(i, "label", e.target.value)} placeholder="Happy Customers" className="flex-1" />
                         <Button variant="ghost" size="icon" onClick={() => removeStat(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                       </div>
                     ))}
@@ -315,7 +385,7 @@ const AdminLanding = () => {
                   <AccordionContent className="space-y-4 pt-2">
                     <div className="space-y-2">
                       <Label>CTA Title</Label>
-                      <Input value={form.cta_title} onChange={(e) => setForm({ ...form, cta_title: e.target.value })} placeholder="Ready to Start Shopping?" />
+                      <Input value={form.cta_title} onChange={(e) => setForm({ ...form, cta_title: e.target.value })} placeholder="Orizino Awaits You" />
                     </div>
                     <div className="space-y-2">
                       <Label>CTA Subtitle</Label>
@@ -327,6 +397,7 @@ const AdminLanding = () => {
                     </div>
                   </AccordionContent>
                 </AccordionItem>
+
               </Accordion>
             </CardContent>
           </Card>
@@ -337,27 +408,140 @@ const AdminLanding = () => {
           <Card>
             <CardHeader>
               <CardTitle>Section Visibility</CardTitle>
-              <CardDescription>Toggle which sections appear on the landing page</CardDescription>
+              <CardDescription>Toggle which sections appear on the company landing page</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { key: "show_about", label: "About Us / Brand Story" },
-                { key: "show_mission_vision", label: "Mission & Vision" },
-                { key: "show_brand_showcase", label: "Brand Showcase" },
-                { key: "show_stats", label: "Stats Section" },
-                { key: "show_features", label: "Features Section" },
-                { key: "show_categories", label: "Categories Preview" },
-                { key: "show_testimonials", label: "Testimonials" },
-                { key: "show_cta", label: "CTA Section" },
-              ].map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between py-2 border-b border-border/20 last:border-0">
-                  <p className="text-sm font-medium">{label}</p>
+                { key: "show_about", label: "About Us / Brand Story", desc: "Scroll-driven word reveal" },
+                { key: "show_mission_vision", label: "Mission & Vision", desc: "Appears in Brand Story section" },
+                { key: "show_brand_showcase", label: "Brand Showcase", desc: "Featured product spotlight" },
+                { key: "show_stats", label: "Stats Strip", desc: "Animated counters between sections" },
+                { key: "show_features", label: "Brand Values", desc: "Scroll-staggered value cards" },
+                { key: "show_categories", label: "Categories Preview", desc: "Browse by category grid" },
+                { key: "show_testimonials", label: "Testimonials", desc: "Scrolling testimonial ticker" },
+                { key: "show_cta", label: "Final CTA Section", desc: "Full-screen call to action" },
+              ].map(({ key, label, desc }) => (
+                <div key={key} className="flex items-center justify-between py-3 border-b border-border/20 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                  </div>
                   <Switch checked={(form as any)[key]} onCheckedChange={(v) => setForm({ ...form, [key]: v })} />
                 </div>
               ))}
+              <div className="pt-2">
+                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
+                  {saveMutation.isPending ? "Saving..." : "Save Visibility Settings"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ═══ LOGO & SPLASH TAB ═══ */}
+        <TabsContent value="branding">
+          <div className="space-y-4">
+
+            {/* Logo upload card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-primary" /> Company Logo
+                </CardTitle>
+                <CardDescription>
+                  The logo shown in the navigation bar and the cinematic splash screen on the company site.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {logoUrl && (
+                  <div className="p-4 rounded-xl bg-[#080808] border border-border/30 flex items-center justify-center">
+                    <img src={logoUrl} alt="Current logo" className="h-14 w-auto object-contain" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Upload New Logo</Label>
+                  <p className="text-xs text-muted-foreground">
+                    SVG or PNG recommended. The logo is displayed on a dark background — use a light-colored version.
+                  </p>
+                  <ImageUpload
+                    bucket="site-assets"
+                    folder="branding"
+                    value={logoUrl}
+                    onUploaded={(url) => {
+                      setLogoUrl(url);
+                      saveLogoMutation.mutate(url);
+                    }}
+                  />
+                </div>
+                {logoUrl && (
+                  <div className="space-y-2">
+                    <Label>Direct URL</Label>
+                    <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="font-mono text-xs" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => saveLogoMutation.mutate(logoUrl)}
+                      disabled={saveLogoMutation.isPending}
+                    >
+                      {saveLogoMutation.isPending ? "Saving..." : "Save URL"}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Splash screen control card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-primary" /> Cinematic Splash Screen
+                </CardTitle>
+                <CardDescription>
+                  The full-screen intro animation shown to first-time visitors on the company site.
+                  It plays once per device and is then suppressed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* How it works */}
+                <div className="rounded-xl border border-border/30 bg-secondary/20 p-4 space-y-2">
+                  <p className="text-sm font-semibold">How it works</p>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Each visitor sees the splash <strong>once</strong> — it stores a version key in their browser.</li>
+                    <li>Clicking "Reset for All Visitors" increments the version. Every browser with the old version will see the splash again on their next visit.</li>
+                    <li>Current version: <strong className="text-foreground">v{splashVersion}</strong></li>
+                  </ul>
+                </div>
+
+                {/* Preview info */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold text-primary mb-1">Splash content</p>
+                  <p className="text-xs text-muted-foreground">
+                    The splash shows the logo above and the tagline <em>"Premium Fashion"</em>.
+                    To update the logo shown in the splash, use the <strong>Company Logo</strong> card above.
+                  </p>
+                </div>
+
+                {/* Reset button */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="destructive"
+                    onClick={handleResetSplash}
+                    disabled={resetPending}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${resetPending ? "animate-spin" : ""}`} />
+                    {resetPending ? "Resetting..." : `Reset Splash for All Visitors`}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Will advance to v{splashVersion + 1}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+          </div>
+        </TabsContent>
+
       </TabsWithParam>
     </div>
   );

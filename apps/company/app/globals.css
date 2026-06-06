@@ -711,14 +711,44 @@ html.perf-lite *::after {
 @import "../profile-layouts.css";
 @import "../storefront-layouts.css";
 
-/* ── Mobile horizontal overflow fix ───────────────────────── */
-html {
-  overflow-x: hidden;
-  max-width: 100vw;
+/* ── React root clip — prevents DPI-glitch horizontal scroll on mobile.
+ * overflow-x: clip does NOT create a scroll container (unlike hidden),
+ * so desktop vertical scroll is completely unaffected. */
+#__next {
+  overflow-x: clip;
+  position: relative;
 }
-body {
-  overflow-x: hidden;
-  max-width: 100vw;
-  /* Prevent GPU compositing jitter on mobile */
+
+/* ── Mobile UI smoothness ──────────────────────────────────── */
+* {
   -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+}
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Mobile-only: layout containment + GPU compositing.
+   contain: layout stops deeply-nested transforms / composited layers
+   from temporarily extending past the viewport during fast scroll
+   (the root cause of the DPI width-glitch). Scoped to ≤1023px so
+   desktop layout is completely unaffected. */
+@media (max-width: 1023px) {
+  main, [data-main] {
+    overflow-x: clip;
+    contain: layout;
+  }
+  .fixed, .sticky {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  nav.sticky, header.sticky {
+    transform: none;
+    -webkit-transform: none;
+  }
+}
+
+/* iOS safe area for bottom nav */
+.pb-safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
