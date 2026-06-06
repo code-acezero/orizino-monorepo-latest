@@ -17,7 +17,8 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present",
-    "postinstall": "node -e \"try{const fs=require('fs'),path=require('path');const srcPkg=require.resolve('lightningcss-linux-x64-gnu/package.json');const src=path.join(path.dirname(srcPkg),'lightningcss.linux-x64-gnu.node');const lcPkg=require.resolve('lightningcss/package.json');const dst=path.join(path.dirname(lcPkg),'lightningcss.linux-x64-gnu.node');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.copyFileSync(src,dst);}}catch(e){}\""
+    "copy-lightningcss": "node scripts/copy-lightningcss.mjs",
+    "postinstall": "node scripts/copy-lightningcss.mjs"
   },
   "devDependencies": {
     "typescript": "^5"

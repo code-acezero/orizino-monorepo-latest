@@ -5,7 +5,7 @@
 # ─────────────────────────────────────────────────────────────────────
 [build]
   base    = "apps/masterpanel"
-  command = "npm install --os=linux --libc=glibc --legacy-peer-deps && npm run build"
+  command = "cd ../.. && npm install --os=linux --libc=glibc --legacy-peer-deps && node scripts/copy-lightningcss.mjs && npm run build:masterpanel"
   publish = ".next"
 
 [build.environment]

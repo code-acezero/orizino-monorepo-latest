@@ -538,6 +538,42 @@ export default function LandingPage() {
       {stats.length > 0 && <StatsStrip stats={stats} />}
 
       {/* ═══════════════════════════════════════════════════════════
+          EXPLORE NAV — always visible, links to all pages
+          ═══════════════════════════════════════════════════════════ */}
+      <section className="py-16 border-t border-white/[0.06] bg-[#080808]">
+        <div className="max-w-6xl mx-auto px-6">
+          <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-3">Discover</p>
+          <h2 className="font-display font-bold text-white text-2xl mb-8">Explore Orizino</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Portfolio", href: "/portfolio", Icon: Sparkles, desc: "Our creative work" },
+              { label: "News", href: "/news", Icon: Star, desc: "Latest updates" },
+              { label: "Products", href: "/products", Icon: Package, desc: "Product highlights" },
+              { label: "Shop", href: storefrontHref("/"), Icon: ArrowUpRight, desc: "Enter the store", external: true },
+            ].map(({ label, href, Icon, desc, external }) => (
+              <motion.a
+                key={label}
+                href={href}
+                target={external ? "_blank" : undefined}
+                rel={external ? "noopener noreferrer" : undefined}
+                className="group rounded-2xl border border-white/8 bg-white/[0.025] p-5 hover:border-[hsl(355,99%,38%)]/40 hover:bg-[hsl(355,99%,38%)]/5 transition-all duration-300 flex flex-col gap-3"
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-[hsl(355,99%,38%)]/10 border border-[hsl(355,99%,38%)]/20 flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-[hsl(355,99%,55%)]" />
+                </div>
+                <div>
+                  <p className="font-display font-bold text-white text-sm">{label}</p>
+                  <p className="text-xs text-white/35 mt-0.5">{desc}</p>
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
           §3  COLLECTION RAIL — horizontal travel on vertical scroll
           ═══════════════════════════════════════════════════════════ */}
       {products && products.length > 0 && (
@@ -630,7 +666,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════
           §5  PORTFOLIO TEASER
           ═══════════════════════════════════════════════════════════ */}
-      {portfolioItems && portfolioItems.length > 0 && (
+      {(
         <section className="py-24 sm:py-32 bg-[#080808]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="flex items-end justify-between mb-10">
@@ -649,7 +685,9 @@ export default function LandingPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-              {portfolioItems.slice(0, 6).map((item, i) => (
+              {!(portfolioItems ?? []).length ? (
+                <div className="col-span-2 md:col-span-3 text-center py-12 text-white/20 text-sm">Portfolio coming soon — check back shortly.</div>
+              ) : (portfolioItems ?? []).slice(0, 6).map((item, i) => (
                 <motion.a
                   key={item.id}
                   href="/portfolio"
@@ -697,7 +735,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════
           §6  LATEST NEWS
           ═══════════════════════════════════════════════════════════ */}
-      {newsItems && newsItems.length > 0 && (
+      {(
         <section className="py-24 sm:py-32 border-t border-white/[0.06] bg-[#080808]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="flex items-end justify-between mb-10">
@@ -716,7 +754,9 @@ export default function LandingPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-5">
-              {newsItems.map((item, i) => (
+              {!(newsItems ?? []).length ? (
+                <div className="col-span-3 text-center py-12 text-white/20 text-sm">Latest news coming soon — stay tuned.</div>
+              ) : (newsItems ?? []).map((item, i) => (
                 <motion.a
                   key={item.id}
                   href="/news"
@@ -773,24 +813,29 @@ export default function LandingPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════
-          §7  PRODUCTS PAGE LINK
+          §7  SHOP CTA — links directly to the storefront
           ═══════════════════════════════════════════════════════════ */}
       <section className="py-16 border-t border-white/[0.06] bg-[#080808]">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-1">Catalogue</p>
-            <h3 className="font-display font-bold text-white text-2xl sm:text-3xl">Browse All Products</h3>
-            <p className="text-white/35 text-sm mt-1">Explore the complete lineup of Orizino products.</p>
+            <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-1">Storefront</p>
+            <h3 className="font-display font-bold text-white text-2xl sm:text-3xl">Shop the Collection</h3>
+            <p className="text-white/35 text-sm mt-1">Browse and buy the full Orizino catalogue.</p>
           </div>
-          <a href="/products">
-            <motion.span
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white/5 border border-white/15 text-white/75 text-sm font-medium hover:bg-white/8 hover:border-white/25 hover:text-white transition-all shrink-0"
-            >
-              View Products <ArrowRight className="w-4 h-4" />
-            </motion.span>
-          </a>
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+            <a href={storefrontHref("/shop")}>
+              <motion.span
+                whileHover={{ scale: 1.04, boxShadow: "0 0 30px hsl(355,99%,38%,0.35)" }}
+                whileTap={{ scale: 0.97 }}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[hsl(355,99%,38%)] text-white text-sm font-semibold shadow-[0_0_20px_hsl(355,99%,38%,0.2)]"
+              >
+                Shop Now <ArrowRight className="w-4 h-4" />
+              </motion.span>
+            </a>
+            <a href="/products" className="text-sm text-white/35 hover:text-white/60 transition-colors">
+              Product highlights →
+            </a>
+          </div>
         </div>
       </section>
 

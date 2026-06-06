@@ -1,13 +1,18 @@
 "use client";
 import * as React from "react";
 import { useRouterState } from "@/lib/router-compat";
-import FullScreenLoader from "@/components/loaders/FullScreenLoader";
 import SectionLoader from "@/components/loaders/SectionLoader";
 
 /**
  * Route transition overlay.
- * - Section switches within the admin panel (/origin/*) → platinum loader.
- * - Page switches across the storefront → stroke-fill logo loader.
+ *
+ * Uses the platinum ring loader for ALL navigation — both full-page and
+ * within-section switches. It appears at 50 ms (instant on real network
+ * latency, invisible on fast cached routes) and dismisses in 80 ms so
+ * there is no lingering flash.
+ *
+ * The semi-transparent backdrop keeps the current page visible while
+ * loading, which eliminates the "frozen blank screen" feeling.
  */
 const RouteTransitionLoader: React.FC = () => {
   const { isLoading, pathname } = useRouterState({
@@ -16,37 +21,27 @@ const RouteTransitionLoader: React.FC = () => {
       pathname: s.location.pathname,
     }),
   });
+
   const [visible, setVisible] = React.useState(false);
-  const [mode, setMode] = React.useState<"section" | "page">("page");
-  // Suppress overlay until we've reached a stable state at least once,
-  // so it doesn't appear on top of the initial splash screen.
-  const hasSettledRef = React.useRef(false);
+
+  const hasSettledRef      = React.useRef(false);
   const lastSettledPathRef = React.useRef<string>(pathname);
 
   React.useEffect(() => {
     let showTimer: ReturnType<typeof setTimeout> | undefined;
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
     if (!isLoading) {
-      hasSettledRef.current = true;
+      hasSettledRef.current      = true;
       lastSettledPathRef.current = pathname;
     }
+
     if (isLoading && hasSettledRef.current) {
-      const from = lastSettledPathRef.current;
-      const to = pathname;
-      // Section switch = navigating within the same top-level path segment
-      // (e.g. /origin/* ↔ /origin/*, /profile/* ↔ /profile/*).
-      // Page switch = crossing into a different root (e.g. /home → /shop).
-      const rootOf = (p: string) => {
-        const seg = p.split("/").filter(Boolean)[0];
-        return seg ?? "";
-      };
-      const isSectionSwitch = from !== to && rootOf(from) === rootOf(to);
-      setMode(isSectionSwitch ? "section" : "page");
-      // Only show overlay if navigation takes >120ms — avoids flash on instant routes.
-      showTimer = setTimeout(() => setVisible(true), 120);
+      showTimer = setTimeout(() => setVisible(true), 50);
     } else {
-      hideTimer = setTimeout(() => setVisible(false), 150);
+      hideTimer = setTimeout(() => setVisible(false), 80);
     }
+
     return () => {
       if (showTimer) clearTimeout(showTimer);
       if (hideTimer) clearTimeout(hideTimer);
@@ -55,20 +50,32 @@ const RouteTransitionLoader: React.FC = () => {
 
   if (!visible) return null;
 
-  if (mode === "section") {
-    return (
+  return (
+    <>
+      <style>{`
+        @keyframes rtl-in { from { opacity: 0 } to { opacity: 1 } }
+      `}</style>
       <div
-        className="ldr-fullscreen ldr-backdrop"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          display: "grid",
+          placeItems: "center",
+          background: "rgba(6,4,6,0.52)",
+          backdropFilter: "blur(5px)",
+          WebkitBackdropFilter: "blur(5px)",
+          animation: "rtl-in 160ms ease-out both",
+          pointerEvents: "auto",
+        }}
         role="status"
         aria-live="polite"
         aria-label="Loading"
       >
-        <SectionLoader tone="platinum" size={96} />
+        <SectionLoader tone="platinum" size={80} />
       </div>
-    );
-  }
-
-  return <FullScreenLoader variant="stroke" size={220} withBackdrop />;
+    </>
+  );
 };
 
 export default RouteTransitionLoader;

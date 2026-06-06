@@ -667,6 +667,9 @@ html.pref-compact .rounded-3xl { border-radius: 1rem !important; }
  */
 html, body {
   overflow-x: clip;
+  /* Prevents iOS rubber-band horizontal bounce from exposing overflow
+     content — the root cause of the high-DPI horizontal scroll glitch. */
+  overscroll-behavior-x: none;
 }
 body {
   max-width: 100vw;
@@ -737,6 +740,10 @@ a, button, [role="button"] {
   main, [data-main] {
     overflow-x: clip;
     contain: layout;
+    /* Tells the browser that only vertical panning is expected on main
+       content areas, blocking accidental horizontal touch scroll. */
+    touch-action: pan-y;
+    overscroll-behavior-x: none;
   }
   .fixed, .sticky {
     -webkit-transform: translateZ(0);

@@ -432,6 +432,39 @@
   to   { opacity: 0; transform: scale(1.06); filter: blur(8px); }
 }
 
+/* ---------- Brand logo stroke-fill loader ---------- */
+/*
+ * Uses SVG pathLength="1" so stroke-dasharray / dashoffset values are
+ * normalised to [0, 1] regardless of the actual curve length.
+ * Phase 1 (0–55%): stroke draws in  (dashoffset 1 → 0)
+ * Phase 2 (55–72%): stroke fades out while fill fades in
+ * Phase 3 (72–95%): hold full fill
+ * Phase 4 (95–100%): everything fades out before the next loop
+ */
+.ldr-brand-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ldr-brand-draw 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation-delay: var(--ldr-brand-delay, 0s);
+}
+.ldr-brand-fill {
+  opacity: 0;
+  animation: ldr-brand-fill 3.2s ease-in-out infinite;
+  animation-delay: var(--ldr-brand-delay, 0s);
+}
+@keyframes ldr-brand-draw {
+  0%       { stroke-dashoffset: 1; opacity: 1; }
+  55%      { stroke-dashoffset: 0; opacity: 1; }
+  72%      { stroke-dashoffset: 0; opacity: 0; }
+  100%     { stroke-dashoffset: 1; opacity: 0; }
+}
+@keyframes ldr-brand-fill {
+  0%, 40%  { opacity: 0; }
+  65%, 82% { opacity: 1; }
+  95%      { opacity: 0; }
+  100%     { opacity: 0; }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .ldr-snap-top, .ldr-snap-right, .ldr-snap-red, .ldr-shape-pulse,
@@ -440,7 +473,8 @@
   .ldr-liquid-level, .ldr-liquid-wave-a, .ldr-liquid-wave-b, .ldr-liquid-drop,
   .ldr-bubble-main, .ldr-bubble-wobble, .ldr-bubble-rim, .ldr-bubble-specular,
   .ldr-mini-bubble, .ldr-halo, .ldr-anim,
-  .ldr-cloud-puff-group, .ldr-cloud-puff, .ldr-cloud-wisp, .ldr-cloud-rain {
+  .ldr-cloud-puff-group, .ldr-cloud-puff, .ldr-cloud-wisp, .ldr-cloud-rain,
+  .ldr-brand-stroke, .ldr-brand-fill {
     animation: none !important;
   }
 }
