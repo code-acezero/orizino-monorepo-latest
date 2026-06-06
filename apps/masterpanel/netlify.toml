@@ -1,15 +1,16 @@
+# ─────────────────────────────────────────────────────────────────────
+# Masterpanel Netlify build config
+# REQUIRED NETLIFY UI SETTING: Set "Base directory" to  apps/masterpanel
+# (matching storefront / company pattern)
+# ─────────────────────────────────────────────────────────────────────
 [build]
-  # Build runs from repo root so npm workspaces resolve correctly.
-  # "base" is left unset so Netlify clones from root.
-  base    = "."
-  command = "npm install --legacy-peer-deps --os=linux --libc=glibc && cd apps/masterpanel && npm run build"
-  publish = "apps/masterpanel/.next"
+  base    = "apps/masterpanel"
+  command = "npm install --os=linux --libc=glibc --legacy-peer-deps && npm run build"
+  publish = ".next"
 
 [build.environment]
-  # Node 22 satisfies camera-controls >=22 requirement and is the current LTS.
   NODE_VERSION = "22"
   NPM_FLAGS    = "--legacy-peer-deps"
-  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,VITE_SUPABASE_PROJECT_ID,VITE_SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

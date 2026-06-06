@@ -710,3 +710,43 @@ html.perf-lite *::after {
 }
 @import "../profile-layouts.css";
 @import "../storefront-layouts.css";
+
+/* ── Mobile horizontal overflow fix ───────────────────────── */
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  /* Prevent GPU compositing jitter on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Mobile UI smoothness ──────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+}
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+/* Prevent iOS momentum scroll causing width glitch */
+#__next, main, [data-main], .min-h-screen {
+  position: relative;
+  overflow-x: hidden;
+}
+/* Smooth GPU compositing for fixed elements */
+.fixed, .sticky {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+/* Remove will-change from non-animated fixed elements to save memory */
+nav.sticky, header.sticky {
+  will-change: auto;
+}
+/* iOS safe area for bottom nav */
+.pb-safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}

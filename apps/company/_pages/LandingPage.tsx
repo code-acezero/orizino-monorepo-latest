@@ -1,23 +1,18 @@
 "use client";
-import React, { useRef, useEffect, useState, useMemo, lazy, Suspense } from "react";
-import { Link, useNavigate } from "@/lib/router-compat";
-import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring, animate } from "framer-motion";
-import { ArrowRight, Sparkles, Star, Zap, Globe, Package, Users, Heart, ChevronRight, ChevronDown, Target, Eye, ShoppingBag, Shield, Truck, RotateCcw, Headphones, Lock, Menu, X } from "lucide-react";
-import { useSeoMeta } from "@/hooks/use-seo-meta";
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import { motion, useScroll, useTransform, useSpring, animate } from "framer-motion";
+import { ArrowRight, ChevronDown, Star, Package, Users, Shield, Truck, Sparkles, ArrowUpRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { storefrontHref } from "@/lib/cross-app-urls";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-import LightBeams from "@/components/landing/LightBeams";
+import { useSeoMeta } from "@/hooks/use-seo-meta";
 import { CompanyNav } from "@/components/nav/CompanyNav";
+import { FirstVisitSplash } from "@/components/landing/CinematicSplash";
+import Footer from "@/components/Footer";
 
-const HeroShowcase3D = lazy(() => import("@/components/landing/HeroShowcase3D"));
-
-const iconMap: Record<string, any> = { ShoppingBag, Shield, Truck, Sparkles, Star, Zap, Globe, Package, Users, Heart };
-
+/* ─── Types ─────────────────────────────────────────────────────── */
 interface LandingConfig {
   hero_title_line1: string;
   hero_title_line2: string;
@@ -52,743 +47,835 @@ interface LandingConfig {
   showcase_product_id: string;
 }
 
-const defaultLandingConfig: LandingConfig = {
-  hero_title_line1: "", hero_title_line2: "", hero_subtitle: "", hero_badge: "",
-  hero_cta_primary: "Start Shopping", hero_cta_secondary: "Explore Categories", hero_bg_url: "",
-  features: [], stats: [], show_stats: true, show_features: true, show_categories: true,
-  show_testimonials: false, show_cta: true, show_about: true, show_mission_vision: true,
+const defaultConfig: LandingConfig = {
+  hero_title_line1: "WEAR THE",
+  hero_title_line2: "EXTRAORDINARY",
+  hero_subtitle: "Premium fashion, crafted for those who refuse to blend in.",
+  hero_badge: "New Collection",
+  hero_cta_primary: "Shop Now",
+  hero_cta_secondary: "Our Story",
+  hero_bg_url: "",
+  features: [],
+  stats: [],
+  show_stats: true,
+  show_features: true,
+  show_categories: true,
+  show_testimonials: false,
+  show_cta: true,
+  show_about: true,
+  show_mission_vision: false,
   show_brand_showcase: false,
-  cta_title: "", cta_subtitle: "", cta_button: "Create Account", testimonials: [],
-  about_title: "", about_text: "",
-  mission_text: "", vision_text: "",
-  showcase_image_url: "", showcase_headline: "", showcase_description: "",
-  showcase_cta_text: "Shop Now", showcase_cta_link: "/home",
+  cta_title: "",
+  cta_subtitle: "Premium quality, delivered to you.",
+  cta_button: "Enter the Store",
+  testimonials: [],
+  about_title: "Our Story",
+  about_text: "We believe fashion is more than clothing — it is a language. A declaration. We craft every piece to tell your story, with the precision of artisans and the vision of poets.",
+  mission_text: "",
+  vision_text: "",
+  showcase_image_url: "",
+  showcase_headline: "",
+  showcase_description: "",
+  showcase_cta_text: "Shop Now",
+  showcase_cta_link: "/",
   showcase_product_id: "",
 };
 
-/* ── Animated Counter ── */
-const AnimatedCounter: React.FC<{ value: string; inView: boolean }> = ({ value, inView }) => {
-  const num = parseInt(value.replace(/[^0-9]/g, ""));
-  const suffix = value.replace(/[0-9]/g, "");
+/* ─── Animated Counter ───────────────────────────────────────────── */
+function AnimatedCounter({ value, trigger }: { value: string; trigger: boolean }) {
+  const num = parseInt(value.replace(/\D/g, ""));
+  const suffix = value.replace(/\d/g, "");
   const [display, setDisplay] = useState(0);
   useEffect(() => {
-    if (!inView || isNaN(num)) return;
+    if (!trigger || isNaN(num)) return;
     const ctrl = animate(0, num, { duration: 1.8, ease: "easeOut", onUpdate: (v) => setDisplay(Math.round(v)) });
     return () => ctrl.stop();
-  }, [inView, num]);
+  }, [trigger, num]);
   if (isNaN(num)) return <span>{value}</span>;
   return <span>{display}{suffix}</span>;
-};
+}
 
-/* ── 3D Tilt Card ── */
-const TiltCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => {
+/* ─── Stats strip ───────────────────────────────────────────────── */
+function StatsStrip({ stats }: { stats: { value: string; label: string }[] }) {
+  const [triggered, setTriggered] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const rotX = useMotionValue(0);
-  const rotY = useMotionValue(0);
-  const sRotX = useSpring(rotX, { stiffness: 200, damping: 20 });
-  const sRotY = useSpring(rotY, { stiffness: 200, damping: 20 });
-  return (
-    <motion.div ref={ref}
-      style={{ rotateX: sRotX, rotateY: sRotY, transformPerspective: 800, transformStyle: "preserve-3d" }}
-      onMouseMove={(e) => {
-        const rect = ref.current?.getBoundingClientRect();
-        if (!rect) return;
-        rotX.set(((e.clientY - rect.top) / rect.height - 0.5) * -12);
-        rotY.set(((e.clientX - rect.left) / rect.width - 0.5) * 12);
-      }}
-      onMouseLeave={() => { rotX.set(0); rotY.set(0); }}
-      className={className}
-    >{children}</motion.div>
-  );
-};
-
-/* ═══════════════ CUSTOM LANDING NAV ═══════════════ */
-const LandingNav: React.FC<{ siteName: string; logoUrl: string }> = ({ siteName, logoUrl }) => {
-  const { user } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setTriggered(true); }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
-
   return (
-    <motion.nav
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, delay: 0.1 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-background/70 backdrop-blur-2xl border-b border-border/20 shadow-[0_4px_30px_hsl(0_0%_0%/0.1)]"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="container mx-auto px-4 flex items-center justify-between h-16">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          {logoUrl && (
-            <img src={logoUrl} alt={siteName} className="h-8 w-auto" />
-          )}
-          <span className="text-lg font-display font-bold text-gradient">{siteName || "Store"}</span>
-        </Link>
-
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href={storefrontHref("/")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</a>
-          <a href={storefrontHref("/shop")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Shop</a>
-          <Link to="/support" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>
-          {user ? (
-            <a href={storefrontHref("/")}>
-              <motion.span whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 hover:bg-primary/20 transition-colors">
-                Enter Store <ArrowRight className="w-3.5 h-3.5" />
-              </motion.span>
-            </a>
-          ) : (
-            <Link to="/auth">
-              <motion.span whileHover={{ scale: 1.05 }} className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-[0_2px_12px_hsl(var(--primary)/0.3)]">
-                Sign In <ArrowRight className="w-3.5 h-3.5" />
-              </motion.span>
-            </Link>
-          )}
+    <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5">
+      {stats.map((s, i) => (
+        <div key={i} className="bg-[#080808] px-8 py-10 text-center">
+          <p className="text-4xl sm:text-5xl font-bold font-display text-white mb-1">
+            <AnimatedCounter value={s.value} trigger={triggered} />
+          </p>
+          <p className="text-xs text-white/40 uppercase tracking-widest">{s.label}</p>
         </div>
-
-        {/* Mobile hamburger */}
-        <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      <motion.div
-        initial={false}
-        animate={{ height: mobileOpen ? "auto" : 0, opacity: mobileOpen ? 1 : 0 }}
-        className="md:hidden overflow-hidden bg-background/90 backdrop-blur-2xl border-b border-border/20"
-      >
-        <div className="px-4 py-4 space-y-3">
-          <a href={storefrontHref("/")} className="block text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Home</a>
-          <a href={storefrontHref("/shop")} className="block text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Shop</a>
-          <Link to="/support" className="block text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Support</Link>
-          <a href={storefrontHref(user ? "/" : "/auth")} className="block text-sm font-medium text-primary" onClick={() => setMobileOpen(false)}>
-            {user ? "Enter Store" : "Sign In"}
-          </a>
-        </div>
-      </motion.div>
-    </motion.nav>
+      ))}
+    </div>
   );
-};
+}
 
-/* Landing uses the shared minimal Footer variant */
-import Footer from "@/components/Footer";
-const LandingFooter: React.FC<{ siteName: string }> = () => (
-  <Footer variantOverride="minimal" />
-);
+/* ─── Word reveal (individual word component for hook rules) ─────── */
+function RevealWord({ word, progress, start, end }: { word: string; progress: any; start: number; end: number }) {
+  const opacity = useTransform(progress, [start, Math.min(end, 0.92)], [0.08, 1]);
+  return (
+    <motion.span style={{ opacity }} className="inline-block">
+      {word}&nbsp;
+    </motion.span>
+  );
+}
+function ScrollText({ text, progress, className }: { text: string; progress: any; className?: string }) {
+  const words = text.split(" ");
+  return (
+    <span className={className}>
+      {words.map((w, i) => (
+        <RevealWord
+          key={i}
+          word={w}
+          progress={progress}
+          start={(i / words.length) * 0.88}
+          end={((i + 1) / words.length) * 0.88}
+        />
+      ))}
+    </span>
+  );
+}
 
-/* ═══════════════ MAIN PAGE ═══════════════ */
-const LandingPage: React.FC = () => {
+/* ─── Product rail card ──────────────────────────────────────────── */
+function ProductRailCard({ p }: { p: any }) {
+  const { formatPrice } = useCurrency();
+  return (
+    <motion.a
+      href={storefrontHref(`/product/${p.slug}`)}
+      className="shrink-0 w-52 sm:w-64 group"
+      whileHover={{ y: -6 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+    >
+      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-3 bg-white/5 border border-white/10">
+        {p.thumbnail || (p.images && p.images[0]) ? (
+          <img
+            src={p.thumbnail || p.images[0]}
+            alt={p.name}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Package className="w-10 h-10 text-white/20" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute bottom-3 left-3 right-3 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <span className="text-xs text-white/80 font-medium">View Product →</span>
+        </div>
+      </div>
+      <p className="text-white/90 text-sm font-medium truncate">{p.name}</p>
+      {p.price && (
+        <p className="text-[hsl(355,99%,60%)] text-sm font-semibold mt-0.5">{formatPrice(p.price)}</p>
+      )}
+    </motion.a>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MAIN PAGE
+   ════════════════════════════════════════════════════════════════════ */
+export default function LandingPage() {
   useSeoMeta("landing", "Welcome");
-  const heroRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, isMobile ? 80 : 200]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.85]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const { user } = useAuth();
 
+  /* ── Data ── */
   const { data: siteSettings } = useQuery({
     queryKey: ["site-settings-landing"],
     queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("key, value, updated_at").in("key", ["site_name", "logo_url", "landing_config"]);
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key,value")
+        .in("key", ["site_name", "logo_url", "landing_config"]);
       const map: Record<string, any> = {};
-      let landingUpdated = 0;
       data?.forEach((s) => {
-        const val = s.value;
-        map[s.key] = typeof val === "object" && val !== null ? (val as any).value ?? val : val;
-        if (s.key === "landing_config" && s.updated_at) {
-          landingUpdated = new Date(s.updated_at).getTime();
-        }
+        const v = s.value;
+        map[s.key] = typeof v === "object" && v !== null ? (v as any).value ?? v : v;
       });
-      map.__landing_updated = landingUpdated;
       return map;
     },
     staleTime: 0,
     refetchOnMount: "always",
-    refetchOnWindowFocus: true,
   });
 
-  const rawName = siteSettings?.site_name;
-  const siteName = String(typeof rawName === "object" && rawName !== null ? (rawName as any).value ?? "" : rawName ?? "");
-  const rawLogo = siteSettings?.logo_url;
-  const logoUrl = String(typeof rawLogo === "object" && rawLogo !== null ? (rawLogo as any).value ?? "" : rawLogo ?? "");
-  const landingRaw = siteSettings?.landing_config;
-  const cfg: LandingConfig = { ...defaultLandingConfig, ...(typeof landingRaw === "object" && landingRaw !== null ? landingRaw : {}) };
-  // Cache-buster: when admin updates the landing config, append the updated_at
-  // so the browser fetches the new hero image even if the URL string is unchanged.
-  const landingUpdated: number = (siteSettings as any)?.__landing_updated || 0;
-  const heroBgUrlBusted = cfg.hero_bg_url
-    ? `${cfg.hero_bg_url}${cfg.hero_bg_url.includes("?") ? "&" : "?"}v=${landingUpdated || "0"}`
+  const { data: products } = useQuery({
+    queryKey: ["landing-products"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("id,name,slug,price,thumbnail,images,compare_at_price")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      return data ?? [];
+    },
+    staleTime: 60000,
+  });
+
+  const { data: portfolioItems } = useQuery({
+    queryKey: ["landing-portfolio"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("portfolio_items")
+        .select("id,title,category,image_url")
+        .eq("is_active", true)
+        .order("sort_order")
+        .limit(6);
+      return data ?? [];
+    },
+    staleTime: 60000,
+  });
+
+  const { data: newsItems } = useQuery({
+    queryKey: ["landing-news"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("news_articles")
+        .select("id,title,slug,excerpt,cover_image_url,category,published_at")
+        .eq("is_published", true)
+        .order("published_at", { ascending: false })
+        .limit(3);
+      return data ?? [];
+    },
+    staleTime: 60000,
+  });
+
+  const cfg: LandingConfig = useMemo(() => {
+    const raw = siteSettings?.landing_config;
+    if (!raw || typeof raw !== "object") return defaultConfig;
+    return { ...defaultConfig, ...(raw as Partial<LandingConfig>) };
+  }, [siteSettings]);
+
+  const siteName = String(siteSettings?.site_name ?? "Orizino");
+  const heroBgUrl = cfg.hero_bg_url
+    ? `${cfg.hero_bg_url}?v=${(siteSettings as any)?.__ts ?? 0}`
     : "";
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ["landing-categories"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("name, slug, icon, icon_url, image_url").eq("is_active", true).is("parent_id", null).order("sort_order").limit(6);
-      return data || [];
-    },
-    staleTime: 10 * 60 * 1000,
+  /* ── Section refs ── */
+  const heroRef = useRef<HTMLDivElement>(null);
+  const storyRef = useRef<HTMLDivElement>(null);
+  const collectionRef = useRef<HTMLDivElement>(null);
+  const valuesRef = useRef<HTMLDivElement>(null);
+
+  /* ── Hero scroll transforms ── */
+  const { scrollYProgress: heroP } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
   });
+  const heroScale = useTransform(heroP, [0, 0.7], [1, 1.2]);
+  const heroOpacity = useTransform(heroP, [0, 0.55], [1, 0]);
+  const heroY = useTransform(heroP, [0, 0.7], [0, -100]);
+  const heroBgScale = useTransform(heroP, [0, 1], [1, 1.18]);
+  const curtainOpacity = useTransform(heroP, [0.25, 0.75], [0, 1]);
 
-  const { data: productCount = 0 } = useQuery({
-    queryKey: ["landing-product-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true);
-      return count || 0;
-    },
-    staleTime: 10 * 60 * 1000,
+  /* ── Story scroll transforms ── */
+  const { scrollYProgress: storyP } = useScroll({
+    target: storyRef,
+    offset: ["start start", "end end"],
   });
+  const storyLabelOpacity = useTransform(storyP, [0, 0.1], [0, 1]);
 
-  // Fetch showcase product if configured
-  const { data: showcaseProduct } = useQuery({
-    queryKey: ["showcase-product", cfg.showcase_product_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("products").select("name, slug, price, compare_at_price, short_description, thumbnail, images").eq("id", cfg.showcase_product_id).maybeSingle();
-      return data;
-    },
-    enabled: !!cfg.showcase_product_id,
-    staleTime: 10 * 60 * 1000,
+  /* ── Collection scroll ── */
+  const { scrollYProgress: collectionP } = useScroll({
+    target: collectionRef,
+    offset: ["start start", "end end"],
   });
+  const productCount = products?.length ?? 0;
+  const maxShift = -(productCount * 276 + 300);
+  const railXRaw = useTransform(collectionP, [0.05, 0.95], [0, maxShift]);
+  const railX = useSpring(railXRaw, { stiffness: 55, damping: 18 });
 
-  const { formatPrice } = useCurrency();
-  const statsRef = useRef(null);
-  const statsInView = useInView(statsRef, { once: true, margin: "-100px" });
-  const hasHeroContent = cfg.hero_title_line1 || cfg.hero_title_line2 || cfg.hero_subtitle;
+  /* ── Values scroll stagger ── */
+  const { scrollYProgress: valuesP } = useScroll({
+    target: valuesRef,
+    offset: ["start start", "end end"],
+  });
+  const va = useTransform(valuesP, [0.0, 0.22], [0, 1]);
+  const vb = useTransform(valuesP, [0.2, 0.42], [0, 1]);
+  const vc = useTransform(valuesP, [0.4, 0.62], [0, 1]);
+  const vd = useTransform(valuesP, [0.6, 0.82], [0, 1]);
+  const yA = useTransform(valuesP, [0.0, 0.22], [60, 0]);
+  const yB = useTransform(valuesP, [0.2, 0.42], [60, 0]);
+  const yC = useTransform(valuesP, [0.4, 0.62], [60, 0]);
+  const yD = useTransform(valuesP, [0.6, 0.82], [60, 0]);
+  const cardOpacities = [va, vb, vc, vd];
+  const cardYs = [yA, yB, yC, yD];
 
-  const letterVariants = {
-    hidden: { opacity: 0, y: 40, rotateX: -60 },
-    visible: (i: number) => ({
-      opacity: 1, y: 0, rotateX: 0,
-      transition: { delay: 0.4 + i * 0.03, duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
-    }),
+  const iconMap: Record<string, React.ElementType> = {
+    Shield, Truck, Users, Sparkles, Star, Package,
+    ShoppingBag: Package, Zap: Sparkles, Globe: Users, Heart: Star, RotateCcw: Truck,
   };
 
-  const trustSignals = [
-    { icon: Truck, title: "Free Shipping", desc: "On orders over $50" },
-    { icon: Lock, title: "Secure Payments", desc: "256-bit SSL encryption" },
-    { icon: Headphones, title: "24/7 Support", desc: "Always here for you" },
-    { icon: RotateCcw, title: "Easy Returns", desc: "30-day return policy" },
+  const defaultFeatures = [
+    { icon: "Shield", title: "Premium Quality", desc: "Every piece crafted to last a lifetime." },
+    { icon: "Truck", title: "Swift Delivery", desc: "Fast, reliable delivery worldwide." },
+    { icon: "Users", title: "Community", desc: "Built with and for our customers." },
+    { icon: "Sparkles", title: "Unique Design", desc: "Stand apart from the crowd." },
   ];
+  const features = cfg.features.length > 0 ? cfg.features.slice(0, 4) : defaultFeatures;
 
+  const defaultStats = [
+    { value: "10K+", label: "Happy Customers" },
+    { value: "500+", label: "Products" },
+    { value: "50+", label: "Countries" },
+    { value: "100%", label: "Premium Quality" },
+  ];
+  const stats = cfg.show_stats && cfg.stats.length > 0
+    ? cfg.stats
+    : cfg.show_stats ? defaultStats : [];
+
+  const storyCtaOpacity = useTransform(storyP, [0.82, 1], [0, 1]);
+  const storyText = cfg.about_text || defaultConfig.about_text;
+
+  /* ════════════════════════════════════════
+     RENDER
+     ════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
-      {/* Cinematic intro moved to global FirstVisitIntro (once per device) */}
-      {/* Custom minimal landing nav */}
-      <LandingNav siteName={siteName} logoUrl={logoUrl} />
+    <div className="bg-[#080808] text-white overflow-x-hidden">
+      <FirstVisitSplash />
+      <CompanyNav />
 
-      {/* ═══════════════ HERO ═══════════════ */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ perspective: "1200px" }}>
-        <LightBeams />
-        {!isMobile && (
-          <div className="absolute right-[-6%] top-[12%] w-[520px] h-[520px] pointer-events-none opacity-90 mix-blend-screen z-[1]">
-            <Suspense fallback={null}>
-              <HeroShowcase3D />
-            </Suspense>
-          </div>
-        )}
-        <div className="absolute inset-0">
-          {cfg.hero_bg_url ? (
-            <>
-              <motion.img key={heroBgUrlBusted} src={heroBgUrlBusted} alt="" className="w-full h-full object-cover"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ repeat: Infinity, duration: 20, ease: "easeInOut" }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/40 to-background" />
-            </>
-          ) : (
-            <>
-              <div className="absolute inset-0 bg-background" />
-              <motion.div className="absolute inset-0" style={{ y: heroY }}>
-                {/* Grid pattern */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{
-                  backgroundImage: `linear-gradient(hsl(var(--primary)/0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)/0.4) 1px, transparent 1px)`,
-                  backgroundSize: '80px 80px',
-                }} />
+      {/* ═══════════════════════════════════════════════════════════
+          §1  CINEMATIC HERO — scroll zooms the world behind you
+          ═══════════════════════════════════════════════════════════ */}
+      <div ref={heroRef} style={{ height: "220vh" }}>
+        <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
 
-                {/* Cinematic radial pulse */}
-                <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full"
-                  style={{ background: "radial-gradient(circle, hsl(var(--primary)/0.1), transparent 60%)" }}
-                  animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
-                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+          {/* Background layer — scales slowly like a cinematic pull-back */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{ scale: heroBgScale, transformOrigin: "center" }}
+          >
+            {heroBgUrl ? (
+              <img src={heroBgUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="absolute inset-0 bg-[#080808]">
+                {/* Subtle noise grain */}
+                <div
+                  className="absolute inset-0 opacity-[0.025]"
+                  style={{
+                    backgroundImage:
+                      "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+                    backgroundSize: "150px",
+                  }}
                 />
-
-                {/* Glow orbs */}
-                <motion.div className="absolute top-[10%] right-[15%] w-[600px] h-[600px] rounded-full blur-[180px]"
-                  style={{ background: "radial-gradient(circle, hsl(var(--primary)/0.12), transparent 70%)" }}
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.7, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+                {/* Crimson radial glow */}
+                <div
+                  className="absolute inset-0"
+                  style={{ background: "radial-gradient(ellipse 60% 55% at 50% 50%, hsl(355,99%,38%,0.08), transparent)" }}
                 />
-                <motion.div className="absolute bottom-[15%] left-[5%] w-[500px] h-[500px] rounded-full blur-[150px]"
-                  style={{ background: "radial-gradient(circle, hsl(var(--accent)/0.1), transparent 70%)" }}
-                  animate={{ scale: [1, 1.25, 1] }}
-                  transition={{ repeat: Infinity, duration: 10, ease: "easeInOut", delay: 2 }}
-                />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-[#080808]" />
+          </motion.div>
 
-                {/* Floating 3D shapes — desktop only */}
-                {!isMobile && (
-                  <>
-                    <motion.div className="absolute top-[25%] right-[12%] w-28 h-28 border border-primary/10 rounded-2xl"
-                      style={{ transformStyle: "preserve-3d" }}
-                      animate={{ rotateX: [0, 360], rotateY: [0, 180], y: [0, -30, 0] }}
-                      transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-                    />
-                    <motion.div className="absolute top-[55%] left-[20%] w-14 h-14 border border-accent/15 rounded-full"
-                      animate={{ scale: [1, 1.4, 1], rotateZ: [0, 180, 360], opacity: [0.2, 0.5, 0.2] }}
-                      transition={{ repeat: Infinity, duration: 12 }}
-                    />
-                    <motion.div className="absolute top-[40%] left-[65%] w-20 h-20"
-                      style={{ transformStyle: "preserve-3d" }}
-                      animate={{ rotateY: [0, 360], rotateX: [0, 90, 0] }}
-                      transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                    >
-                      <div className="w-full h-full border border-primary/8 transform rotate-45" />
-                    </motion.div>
+          {/* Red scan line — cinematic film-strip feel */}
+          <motion.div
+            className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+            style={{ background: "linear-gradient(90deg,transparent,hsl(355,99%,38%),transparent)" }}
+            animate={{ x: ["-100%", "100%"] }}
+            transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", repeatDelay: 4 }}
+          />
 
-                    {/* Lens flare streaks */}
-                    <motion.div className="absolute top-[30%] left-0 w-[60%] h-[1px]"
-                      style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary)/0.15), transparent)" }}
-                      animate={{ x: ["-100%", "200%"], opacity: [0, 0.6, 0] }}
-                      transition={{ repeat: Infinity, duration: 8, ease: "easeInOut", delay: 3 }}
-                    />
-                    <motion.div className="absolute top-[60%] right-0 w-[40%] h-[1px]"
-                      style={{ background: "linear-gradient(90deg, transparent, hsl(var(--accent)/0.1), transparent)" }}
-                      animate={{ x: ["200%", "-100%"], opacity: [0, 0.4, 0] }}
-                      transition={{ repeat: Infinity, duration: 10, ease: "easeInOut", delay: 5 }}
-                    />
-                  </>
-                )}
+          {/* Dark curtain that fades in as you leave this section */}
+          <motion.div
+            className="absolute inset-0 bg-[#080808] pointer-events-none"
+            style={{ opacity: curtainOpacity }}
+          />
 
-              </motion.div>
-            </>
-          )}
-        </div>
-
-        <motion.div className="relative container mx-auto px-4 py-24 pt-32 text-center" style={{ scale: heroScale, opacity: heroOpacity }}>
-          <div className="max-w-4xl mx-auto" style={{ transformStyle: "preserve-3d" }}>
+          {/* Hero content — scale + opacity driven by heroP */}
+          <motion.div
+            className="relative z-10 text-center px-6 max-w-5xl mx-auto"
+            style={{ scale: heroScale, opacity: heroOpacity, y: heroY }}
+          >
             {cfg.hero_badge && (
-              <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] border border-primary/30 text-primary bg-primary/5 mb-8 backdrop-blur-sm">
-                  <Sparkles className="w-3 h-3" /> {cfg.hero_badge}
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mb-8"
+              >
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[hsl(355,99%,38%)]/40 text-[hsl(355,99%,60%)] text-[10px] font-semibold uppercase tracking-[0.25em] bg-[hsl(355,99%,38%)]/5 backdrop-blur-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[hsl(355,99%,60%)] animate-pulse" />
+                  {cfg.hero_badge}
                 </span>
               </motion.div>
             )}
-            {hasHeroContent && (
-              <div className="mb-8" style={{ perspective: "600px" }}>
-                {cfg.hero_title_line1 && (
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.05] tracking-tight text-foreground">
-                    {cfg.hero_title_line1.split("").map((char, i) => (
-                      <motion.span key={i} custom={i} variants={letterVariants} initial="hidden" animate="visible"
-                        className="inline-block" style={{ transformOrigin: "bottom" }}>
-                        {char === " " ? "\u00A0" : char}
-                      </motion.span>
-                    ))}
-                  </h1>
-                )}
-                {cfg.hero_title_line2 && (
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.05] tracking-tight text-gradient mt-1">
-                    {cfg.hero_title_line2.split("").map((char, i) => (
-                      <motion.span key={i} custom={i + (cfg.hero_title_line1?.length || 0)} variants={letterVariants} initial="hidden" animate="visible"
-                        className="inline-block" style={{ transformOrigin: "bottom" }}>
-                        {char === " " ? "\u00A0" : char}
-                      </motion.span>
-                    ))}
-                  </h1>
-                )}
-              </div>
-            )}
+
+            <motion.h1
+              className="font-display font-black leading-[0.9] tracking-tight"
+              style={{ fontSize: "clamp(3.2rem, 11vw, 9.5rem)" }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <span className="block text-white">{cfg.hero_title_line1 || "WEAR THE"}</span>
+              <span
+                className="block"
+                style={{
+                  WebkitTextStroke: "1.5px hsl(355,99%,38%)",
+                  color: "transparent",
+                }}
+              >
+                {cfg.hero_title_line2 || "EXTRAORDINARY"}
+              </span>
+            </motion.h1>
+
             {cfg.hero_subtitle && (
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.8 }}
-                className="text-base md:text-lg text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
+              <motion.p
+                className="mt-8 text-white/45 text-base sm:text-lg max-w-xl mx-auto font-light tracking-wide leading-relaxed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9, duration: 0.8 }}
+              >
                 {cfg.hero_subtitle}
               </motion.p>
             )}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 1 }} className="flex flex-wrap gap-3 justify-center">
+
+            <motion.div
+              className="mt-10 flex flex-wrap gap-3 justify-center"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1, duration: 0.7 }}
+            >
               <a href={storefrontHref("/")}>
-                <motion.span whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(var(--primary)/0.4)" }} whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-[0_4px_20px_hsl(var(--primary)/0.3)] transition-shadow">
-                  {cfg.hero_cta_primary || "Start Shopping"} <ArrowRight className="w-4 h-4" />
+                <motion.span
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 50px hsl(355,99%,38%,0.45)" }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[hsl(355,99%,38%)] text-white font-semibold text-sm shadow-[0_0_35px_hsl(355,99%,38%,0.3)]"
+                >
+                  {cfg.hero_cta_primary || "Shop Now"} <ArrowRight className="w-4 h-4" />
                 </motion.span>
               </a>
-              <a href={storefrontHref("/shop")}>
-                <motion.span whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-border/60 text-foreground font-medium text-sm hover:bg-secondary/50 backdrop-blur-sm transition-colors">
-                  {cfg.hero_cta_secondary || "Explore"} <ChevronRight className="w-4 h-4" />
+              <a href="#story">
+                <motion.span
+                  whileHover={{ scale: 1.04, borderColor: "rgba(255,255,255,0.4)" }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white/75 font-medium text-sm backdrop-blur-sm hover:text-white transition-colors"
+                >
+                  {cfg.hero_cta_secondary || "Our Story"}
                 </motion.span>
               </a>
             </motion.div>
+          </motion.div>
+
+          {/* Scroll cue */}
+          <motion.div
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 pointer-events-none"
+            style={{ opacity: heroOpacity }}
+          >
+            <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.8 }}>
+              <ChevronDown className="w-4 h-4 text-white/25" />
+            </motion.div>
+            <span className="text-[9px] uppercase tracking-widest text-white/20">Scroll</span>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          §2  BRAND STORY — word-by-word scroll text reveal
+          ═══════════════════════════════════════════════════════════ */}
+      <div id="story" ref={storyRef} style={{ height: "270vh" }}>
+        <div className="sticky top-0 h-screen overflow-hidden flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#080808]" />
+          {/* Ambient glow */}
+          <motion.div
+            className="absolute w-[900px] h-[900px] rounded-full pointer-events-none"
+            style={{
+              background: "radial-gradient(circle, hsl(355,99%,38%,0.065), transparent 65%)",
+              top: "50%",
+              left: "50%",
+              x: "-50%",
+              y: "-50%",
+            }}
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
+          />
+          <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+            <motion.p
+              className="text-[10px] uppercase tracking-[0.35em] text-[hsl(355,99%,50%)] mb-10"
+              style={{ opacity: storyLabelOpacity }}
+            >
+              {cfg.show_about ? cfg.about_title || "Our Story" : "Our Story"}
+            </motion.p>
+
+            <div
+              className="font-display font-bold leading-[1.18] tracking-tight text-white"
+              style={{ fontSize: "clamp(1.6rem, 4vw, 3.2rem)" }}
+            >
+              <ScrollText text={storyText} progress={storyP} />
+            </div>
+
+            {cfg.show_mission_vision && cfg.mission_text && (
+              <div className="mt-12 font-light text-white/35 leading-relaxed" style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)" }}>
+                <ScrollText text={cfg.mission_text} progress={storyP} />
+              </div>
+            )}
+
+            <motion.div
+              className="mt-16"
+              style={{ opacity: storyCtaOpacity }}
+            >
+              <a href={storefrontHref("/")} className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors">
+                Explore the collection <ArrowRight className="w-4 h-4" />
+              </a>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
+      </div>
 
-        <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2" animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-          <ChevronDown className="w-5 h-5 text-muted-foreground/50" />
-        </motion.div>
-      </section>
+      {/* Stats strip */}
+      {stats.length > 0 && <StatsStrip stats={stats} />}
 
-      {/* ═══════════════ TRUST SIGNALS ═══════════════ */}
-      <section className="py-12 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
-        <div className="container mx-auto px-4 relative">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {trustSignals.map((signal, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <div className="text-center p-5 rounded-2xl border border-border/10 bg-card/20 backdrop-blur-sm hover:border-primary/20 transition-all group">
-                  <motion.div className="w-10 h-10 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-3"
-                    whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}>
-                    <signal.icon className="w-5 h-5 text-primary" />
-                  </motion.div>
-                  <p className="text-xs font-semibold text-foreground mb-0.5">{signal.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{signal.desc}</p>
-                </div>
+      {/* ═══════════════════════════════════════════════════════════
+          §3  COLLECTION RAIL — horizontal travel on vertical scroll
+          ═══════════════════════════════════════════════════════════ */}
+      {products && products.length > 0 && (
+        <div ref={collectionRef} style={{ height: `${Math.max(220, productCount * 28)}vh` }}>
+          <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center bg-[#080808]">
+            <div className="relative z-10 px-6 sm:px-12 mb-8 flex items-end justify-between max-w-full">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-2">
+                  This Season
+                </p>
+                <h2
+                  className="font-display font-black text-white leading-tight"
+                  style={{ fontSize: "clamp(2.2rem, 6vw, 4.5rem)" }}
+                >
+                  The Collection
+                </h2>
+              </div>
+              <a
+                href={storefrontHref("/shop")}
+                className="flex items-center gap-1.5 text-sm text-white/35 hover:text-white transition-colors shrink-0 mb-1"
+              >
+                View all <ArrowUpRight className="w-4 h-4" />
+              </a>
+            </div>
+
+            {/* Horizontal rail — driven by vertical scroll */}
+            <div className="overflow-visible pl-6 sm:pl-12">
+              <motion.div className="flex gap-5" style={{ x: railX }}>
+                {products.map((p) => (
+                  <ProductRailCard key={p.id} p={p} />
+                ))}
+                {/* End CTA card */}
+                <motion.a
+                  href={storefrontHref("/shop")}
+                  className="shrink-0 w-52 sm:w-64 aspect-[3/4] rounded-2xl border border-[hsl(355,99%,38%)]/25 bg-[hsl(355,99%,38%)]/5 flex flex-col items-center justify-center gap-4 hover:bg-[hsl(355,99%,38%)]/10 transition-colors group"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <div className="w-14 h-14 rounded-full border border-[hsl(355,99%,38%)]/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <ArrowRight className="w-6 h-6 text-[hsl(355,99%,50%)]" />
+                  </div>
+                  <p className="text-sm font-semibold text-white/60 group-hover:text-white/90 transition-colors">
+                    Shop All
+                  </p>
+                </motion.a>
               </motion.div>
-            ))}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          §4  BRAND VALUES — scroll-staggered card reveals
+          ═══════════════════════════════════════════════════════════ */}
+      {cfg.show_features && (
+        <div ref={valuesRef} style={{ height: "200vh" }}>
+          <div className="sticky top-0 h-screen overflow-hidden flex flex-col items-center justify-center bg-[#080808]">
+            <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
+              <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-4 text-center">
+                What We Stand For
+              </p>
+              <h2
+                className="font-display font-black text-white text-center mb-12 leading-tight"
+                style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+              >
+                Built Different
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {features.map((f, i) => {
+                  const Icon = iconMap[f.icon] || Sparkles;
+                  return (
+                    <motion.div
+                      key={i}
+                      style={{ opacity: cardOpacities[i], y: cardYs[i] }}
+                      className="group rounded-2xl border border-white/8 bg-white/[0.025] p-7 hover:border-[hsl(355,99%,38%)]/40 hover:bg-[hsl(355,99%,38%)]/5 transition-all duration-500"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-[hsl(355,99%,38%)]/10 border border-[hsl(355,99%,38%)]/20 flex items-center justify-center mb-5">
+                        <Icon className="w-5 h-5 text-[hsl(355,99%,55%)]" />
+                      </div>
+                      <h3 className="font-display font-bold text-white text-[15px] mb-2">{f.title}</h3>
+                      <p className="text-sm text-white/35 leading-relaxed">{f.desc}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          §5  PORTFOLIO TEASER
+          ═══════════════════════════════════════════════════════════ */}
+      {portfolioItems && portfolioItems.length > 0 && (
+        <section className="py-24 sm:py-32 bg-[#080808]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-2">Creative Work</p>
+                <h2
+                  className="font-display font-black text-white leading-tight"
+                  style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+                >
+                  Portfolio
+                </h2>
+              </div>
+              <a href="/portfolio" className="flex items-center gap-1.5 text-sm text-white/35 hover:text-white transition-colors mb-1">
+                All projects <ArrowUpRight className="w-4 h-4" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+              {portfolioItems.slice(0, 6).map((item, i) => (
+                <motion.a
+                  key={item.id}
+                  href="/portfolio"
+                  className="group relative overflow-hidden rounded-xl sm:rounded-2xl aspect-[4/5] bg-white/5 border border-white/8 block"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08, duration: 0.6 }}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[hsl(355,99%,38%)]/10 to-transparent" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <p className="text-white text-sm font-semibold truncate">{item.title}</p>
+                    {item.category && <p className="text-white/50 text-xs mt-0.5">{item.category}</p>}
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+
+            <div className="text-center mt-10">
+              <a href="/portfolio">
+                <motion.span
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full border border-white/15 text-white/60 text-sm font-medium hover:border-white/30 hover:text-white transition-all"
+                >
+                  See Full Portfolio <ArrowRight className="w-4 h-4" />
+                </motion.span>
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          §6  LATEST NEWS
+          ═══════════════════════════════════════════════════════════ */}
+      {newsItems && newsItems.length > 0 && (
+        <section className="py-24 sm:py-32 border-t border-white/[0.06] bg-[#080808]">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-2">Updates</p>
+                <h2
+                  className="font-display font-black text-white leading-tight"
+                  style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+                >
+                  Latest News
+                </h2>
+              </div>
+              <a href="/news" className="flex items-center gap-1.5 text-sm text-white/35 hover:text-white transition-colors mb-1">
+                All articles <ArrowUpRight className="w-4 h-4" />
+              </a>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {newsItems.map((item, i) => (
+                <motion.a
+                  key={item.id}
+                  href="/news"
+                  className="group flex flex-col rounded-2xl border border-white/8 overflow-hidden hover:border-[hsl(355,99%,38%)]/30 transition-all duration-300 block"
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1, duration: 0.6 }}
+                >
+                  <div className="aspect-[16/9] overflow-hidden bg-white/5">
+                    {item.cover_image_url ? (
+                      <img
+                        src={item.cover_image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[hsl(355,99%,38%)]/10 to-transparent flex items-center justify-center">
+                        <Sparkles className="w-8 h-8 text-white/10" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col flex-1 p-5">
+                    {item.category && (
+                      <p className="text-[10px] uppercase tracking-wider text-[hsl(355,99%,50%)] mb-2">{item.category}</p>
+                    )}
+                    <h3 className="font-display font-bold text-white text-[15px] leading-snug mb-2 group-hover:text-[hsl(355,99%,60%)] transition-colors">
+                      {item.title}
+                    </h3>
+                    {item.excerpt && (
+                      <p className="text-white/35 text-xs leading-relaxed line-clamp-2 flex-1">{item.excerpt}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-4">
+                      {item.published_at && (
+                        <span className="text-[10px] text-white/20">
+                          {new Date(item.published_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
+                      <span className="text-xs text-white/35 group-hover:text-white/65 transition-colors flex items-center gap-1">
+                        Read <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          §7  PRODUCTS PAGE LINK
+          ═══════════════════════════════════════════════════════════ */}
+      <section className="py-16 border-t border-white/[0.06] bg-[#080808]">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-1">Catalogue</p>
+            <h3 className="font-display font-bold text-white text-2xl sm:text-3xl">Browse All Products</h3>
+            <p className="text-white/35 text-sm mt-1">Explore the complete lineup of Orizino products.</p>
+          </div>
+          <a href="/products">
+            <motion.span
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white/5 border border-white/15 text-white/75 text-sm font-medium hover:bg-white/8 hover:border-white/25 hover:text-white transition-all shrink-0"
+            >
+              View Products <ArrowRight className="w-4 h-4" />
+            </motion.span>
+          </a>
         </div>
       </section>
 
-      {/* ═══════════════ ABOUT US ═══════════════ */}
-      {cfg.show_about && (cfg.about_title || cfg.about_text) && (
-        <section className="py-20 md:py-28 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.02]" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--primary)/0.5) 1px, transparent 0)`,
-            backgroundSize: '40px 40px',
-          }} />
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-4">About Us</p>
-                <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground mb-6 leading-tight">
-                  {cfg.about_title || "Our Story"}
-                </h2>
-                <p className="text-muted-foreground leading-relaxed mb-6">{cfg.about_text}</p>
-                <div className="h-1 w-20 bg-gradient-to-r from-primary to-accent rounded-full" />
-              </motion.div>
-              <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative flex justify-center">
-                <div className="relative w-72 h-72">
-                  <motion.div className="absolute inset-0 rounded-3xl border border-primary/20 bg-primary/5 backdrop-blur-sm"
-                    animate={{ rotateY: [0, 10, 0, -10, 0], rotateX: [0, -5, 0, 5, 0] }}
-                    transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-                    style={{ transformStyle: "preserve-3d", perspective: "800px" }}
-                  />
-                  <motion.div className="absolute inset-4 rounded-2xl border border-accent/15 bg-accent/5"
-                    animate={{ rotateY: [0, -8, 0, 8, 0], rotateX: [0, 6, 0, -6, 0] }}
-                    transition={{ repeat: Infinity, duration: 10, ease: "easeInOut", delay: 1 }}
-                    style={{ transformStyle: "preserve-3d" }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 4 }}
-                      className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center backdrop-blur-sm">
-                      <Sparkles className="w-8 h-8 text-primary" />
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* ═══════════════════════════════════════════════════════════
+          §8  CINEMATIC CTA — full screen, glowing red
+          ═══════════════════════════════════════════════════════════ */}
+      {cfg.show_cta && (
+        <section className="relative h-screen flex items-center justify-center overflow-hidden border-t border-white/[0.06] bg-[#080808]">
+          {/* Pulsing red glow */}
+          <motion.div
+            className="absolute w-[700px] h-[700px] rounded-full pointer-events-none"
+            style={{
+              background: "radial-gradient(circle, hsl(355,99%,38%,0.13), transparent 65%)",
+              top: "50%",
+              left: "50%",
+              x: "-50%",
+              y: "-50%",
+            }}
+            animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+          />
+          {/* Film-scan line */}
+          <motion.div
+            className="absolute left-0 right-0 h-px pointer-events-none"
+            style={{ background: "linear-gradient(90deg,transparent,hsl(355,99%,38%,0.3),transparent)" }}
+            animate={{ y: ["-45vh", "45vh"] }}
+            transition={{ repeat: Infinity, duration: 3.5, ease: "linear" }}
+          />
 
-      {/* ═══════════════ MISSION & VISION ═══════════════ */}
-      {cfg.show_mission_vision && (cfg.mission_text || cfg.vision_text) && (
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-2">What Drives Us</p>
-              <h2 className="text-3xl md:text-4xl font-bold font-display text-foreground">Mission & Vision</h2>
-            </motion.div>
-            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {cfg.mission_text && (
-                <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-                  <TiltCard className="h-full">
-                    <div className="rounded-3xl border border-border/30 bg-card/40 backdrop-blur-xl p-8 h-full hover:border-primary/30 transition-colors relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <motion.div className="absolute -top-2 -right-2 w-24 h-24 rounded-full bg-primary/5 blur-2xl"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ repeat: Infinity, duration: 4 }}
-                      />
-                      <div className="relative z-10">
-                        <motion.div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5"
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                        >
-                          <Target className="w-7 h-7 text-primary" />
-                        </motion.div>
-                        <h3 className="font-display font-bold text-xl text-foreground mb-3">Our Mission</h3>
-                        <p className="text-muted-foreground leading-relaxed text-sm">{cfg.mission_text}</p>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </motion.div>
+          <motion.div
+            className="relative z-10 text-center px-6 max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9 }}
+          >
+            <p className="text-[10px] uppercase tracking-widest text-[hsl(355,99%,50%)] mb-7">
+              Enter the World
+            </p>
+            <h2
+              className="font-display font-black text-white leading-[0.9] mb-7"
+              style={{ fontSize: "clamp(2.5rem, 9vw, 7rem)" }}
+            >
+              {cfg.cta_title || (
+                <>
+                  {siteName}
+                  <br />
+                  <span style={{ WebkitTextStroke: "1.5px hsl(355,99%,38%)", color: "transparent" }}>
+                    Awaits You
+                  </span>
+                </>
               )}
-              {cfg.vision_text && (
-                <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
-                  <TiltCard className="h-full">
-                    <div className="rounded-3xl border border-border/30 bg-card/40 backdrop-blur-xl p-8 h-full hover:border-accent/30 transition-colors relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <motion.div className="absolute -top-2 -left-2 w-24 h-24 rounded-full bg-accent/5 blur-2xl"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ repeat: Infinity, duration: 5, delay: 1 }}
-                      />
-                      <div className="relative z-10">
-                        <motion.div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-5"
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.5 }}
-                        >
-                          <Eye className="w-7 h-7 text-accent-foreground" />
-                        </motion.div>
-                        <h3 className="font-display font-bold text-xl text-foreground mb-3">Our Vision</h3>
-                        <p className="text-muted-foreground leading-relaxed text-sm">{cfg.vision_text}</p>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ BRANDED PRODUCT HIGHLIGHT ═══════════════ */}
-      {cfg.show_brand_showcase && (showcaseProduct || cfg.showcase_image_url || cfg.showcase_headline) && (
-        <section className="py-20 md:py-32 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.03] via-transparent to-accent/[0.03]" />
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center max-w-6xl mx-auto">
-              {/* Product image with parallax float */}
-              <motion.div initial={{ opacity: 0, x: -60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 1 }}>
-                <TiltCard>
-                  <div className="relative">
-                    <motion.div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 blur-2xl"
-                      animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 5 }}
-                    />
-                    <div className="relative rounded-3xl overflow-hidden border border-border/30 shadow-[0_20px_80px_hsl(var(--primary)/0.15)]">
-                      <motion.img
-                        src={showcaseProduct?.thumbnail || showcaseProduct?.images?.[0] || cfg.showcase_image_url}
-                        alt={showcaseProduct?.name || cfg.showcase_headline || "Brand showcase"}
-                        className="w-full h-auto object-cover aspect-square"
-                        loading="lazy"
-                        animate={{ y: [0, -8, 0] }}
-                        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                      />
-                    </div>
-                  </div>
-                </TiltCard>
-              </motion.div>
-
-              {/* Product details */}
-              <motion.div initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.2 }}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-4">Featured Product</p>
-                <h2 className="text-3xl md:text-5xl font-bold font-display text-foreground mb-4 leading-tight">
-                  {showcaseProduct?.name || cfg.showcase_headline || "Premium Quality"}
-                </h2>
-                {(showcaseProduct?.price || showcaseProduct?.compare_at_price) && (
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <span className="text-2xl font-bold text-gradient">{formatPrice(showcaseProduct.price)}</span>
-                    {showcaseProduct.compare_at_price && showcaseProduct.compare_at_price > showcaseProduct.price && (
-                      <span className="text-lg text-muted-foreground line-through">{formatPrice(showcaseProduct.compare_at_price)}</span>
-                    )}
-                  </div>
-                )}
-                <p className="text-muted-foreground leading-relaxed mb-8 text-base">
-                  {showcaseProduct?.short_description || cfg.showcase_description}
-                </p>
-                <a href={storefrontHref(showcaseProduct ? `/product/${showcaseProduct.slug}` : "/")}>
-                  <motion.span whileHover={{ scale: 1.04, boxShadow: "0 8px 40px hsl(var(--primary)/0.4)" }} whileTap={{ scale: 0.97 }}
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-[0_4px_20px_hsl(var(--primary)/0.3)]">
-                    {cfg.showcase_cta_text || "Shop Now"} <ArrowRight className="w-4 h-4" />
+            </h2>
+            {cfg.cta_subtitle && (
+              <p className="text-white/35 text-base mb-10 max-w-lg mx-auto leading-relaxed">
+                {cfg.cta_subtitle}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <a href={storefrontHref("/")}>
+                <motion.span
+                  whileHover={{ scale: 1.06, boxShadow: "0 0 70px hsl(355,99%,38%,0.55)" }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center gap-2.5 px-9 py-4 rounded-full bg-[hsl(355,99%,38%)] text-white font-bold text-sm shadow-[0_0_45px_hsl(355,99%,38%,0.3)]"
+                >
+                  {cfg.cta_button || "Enter the Store"} <ArrowRight className="w-4 h-4" />
+                </motion.span>
+              </a>
+              {!user && (
+                <a href="/auth">
+                  <motion.span
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="inline-flex items-center gap-2 px-9 py-4 rounded-full border border-white/20 text-white/65 font-medium text-sm hover:border-white/35 hover:text-white transition-all"
+                  >
+                    Create Account
                   </motion.span>
                 </a>
-              </motion.div>
+              )}
             </div>
-          </div>
+          </motion.div>
         </section>
       )}
 
-      {/* ═══════════════ STATS ═══════════════ */}
-      {cfg.show_stats && cfg.stats.length > 0 && (
-        <section ref={statsRef} className="py-16 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5" />
-          <div className="container mx-auto px-4 relative">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {cfg.stats.map((stat, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}>
-                  <TiltCard>
-                    <div className="text-center rounded-2xl border border-border/20 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/20 transition-colors relative overflow-hidden">
-                      <motion.div className="absolute inset-0 bg-primary/[0.02]"
-                        animate={{ opacity: [0, 0.5, 0] }}
-                        transition={{ repeat: Infinity, duration: 3, delay: i * 0.5 }}
-                      />
-                      <p className="text-3xl md:text-5xl font-bold font-display text-gradient relative z-10">
-                        <AnimatedCounter value={stat.value} inView={statsInView} />
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2 relative z-10">{stat.label}</p>
-                    </div>
-                  </TiltCard>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ FEATURES ═══════════════ */}
-      {cfg.show_features && cfg.features.length > 0 && (
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-2">Why Choose Us</p>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-foreground">Built Different</h2>
-            </motion.div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {cfg.features.map((f, i) => {
-                const Icon = iconMap[f.icon] || Sparkles;
-                return (
-                  <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                    <TiltCard>
-                      <div className="group rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm p-6 hover:border-primary/30 transition-all h-full relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative z-10">
-                          <motion.div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4"
-                            whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}>
-                            <Icon className="w-6 h-6 text-primary" />
-                          </motion.div>
-                          <h3 className="font-display font-semibold text-foreground text-sm mb-1.5">{f.title}</h3>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-                        </div>
-                      </div>
-                    </TiltCard>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ CATEGORIES ═══════════════ */}
-      {cfg.show_categories && categories.length > 0 && (
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-2">Browse</p>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-foreground">Shop by Category</h2>
-              {productCount > 0 && <p className="text-sm text-muted-foreground mt-1">{productCount}+ products across {categories.length} categories</p>}
-            </motion.div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {categories.map((cat, i) => (
-                <motion.div key={cat.slug} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
-                  <Link to={`/categories/${cat.slug}`} className="group block rounded-2xl overflow-hidden relative h-40 hover:scale-[1.02] transition-transform">
-                    {cat.image_url ? (
-                      <motion.img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" loading="lazy"
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ duration: 0.7 }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-end p-4">
-                      {cat.icon_url ? (
-                        <img src={cat.icon_url} alt="" className="w-8 h-8 rounded-lg object-contain mb-2" />
-                      ) : cat.icon ? (
-                        <span className="text-xl mb-2">{cat.icon}</span>
-                      ) : (
-                        <Package className="w-6 h-6 text-muted-foreground mb-2" />
-                      )}
-                      <p className="text-xs font-semibold text-foreground text-center group-hover:text-primary transition-colors">{cat.name}</p>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ TESTIMONIALS ═══════════════ */}
-      {cfg.show_testimonials && cfg.testimonials.length > 0 && (
-        <section className="py-16 md:py-24 overflow-hidden">
-          <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary mb-2">Testimonials</p>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-foreground">What Our Customers Say</h2>
-            </motion.div>
-            <div className="relative">
-              <motion.div className="flex gap-5"
-                animate={{ x: [0, -(cfg.testimonials.length * 320)] }}
-                transition={{ repeat: Infinity, duration: cfg.testimonials.length * 8, ease: "linear" }}>
-                {[...cfg.testimonials, ...cfg.testimonials].map((t, i) => (
-                  <div key={i} className="shrink-0 w-[300px] rounded-2xl border border-border/30 bg-card/40 backdrop-blur-sm p-6">
-                    <div className="flex gap-0.5 mb-3">
-                      {Array.from({ length: t.rating }).map((_, j) => <Star key={j} className="w-3.5 h-3.5 text-primary fill-primary" />)}
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-4 leading-relaxed italic">"{t.text}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-primary-foreground text-xs font-bold">
-                        {t.name.charAt(0)}
-                      </div>
-                      <p className="text-xs font-semibold text-foreground">{t.name}</p>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ CTA ═══════════════ */}
-      {cfg.show_cta && (cfg.cta_title || siteName) && (
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
-              className="rounded-3xl border border-border/30 bg-card/30 backdrop-blur-xl p-10 md:p-16 text-center relative overflow-hidden">
-              {/* Floating particle ring */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <motion.div key={i} className="absolute w-2 h-2 rounded-full bg-primary/20"
-                  style={{
-                    left: `${50 + 35 * Math.cos((i / 8) * Math.PI * 2)}%`,
-                    top: `${50 + 35 * Math.sin((i / 8) * Math.PI * 2)}%`,
-                  }}
-                  animate={{ scale: [0.5, 1.5, 0.5], opacity: [0.2, 0.6, 0.2] }}
-                  transition={{ repeat: Infinity, duration: 3, delay: i * 0.3 }}
-                />
-              ))}
-              <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(circle at 50% 50%, hsl(var(--primary)/0.3), transparent 70%)" }} />
-              <div className="relative z-10">
-                <h2 className="text-2xl md:text-4xl font-bold font-display text-foreground mb-4">
-                  {cfg.cta_title || (siteName ? <>Ready for <span className="text-gradient">{siteName}</span>?</> : "")}
-                </h2>
-                {cfg.cta_subtitle && <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">{cfg.cta_subtitle}</p>}
-                <Link to="/auth">
-                  <motion.span
-                    whileHover={{ scale: 1.05, boxShadow: "0 8px 40px hsl(var(--primary)/0.4)" }}
-                    whileTap={{ scale: 0.97 }}
-                    animate={{ boxShadow: ["0 4px 20px hsl(var(--primary)/0.3)", "0 4px 30px hsl(var(--primary)/0.5)", "0 4px 20px hsl(var(--primary)/0.3)"] }}
-                    transition={{ boxShadow: { repeat: Infinity, duration: 2 } }}
-                    className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm">
-                    {cfg.cta_button || "Get Started"} <ArrowRight className="w-4 h-4" />
-                  </motion.span>
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-      )}
-
-      {/* Landing-specific minimal footer */}
-      <LandingFooter siteName={siteName} />
+      <Footer variantOverride="minimal" />
     </div>
   );
-};
-
-export default LandingPage;
+}

@@ -27,13 +27,20 @@ export function CompanyNav() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled || open ? "bg-black/80 backdrop-blur-xl border-b border-white/10" : "bg-transparent"
+        scrolled || open
+          ? "bg-black/80 backdrop-blur-xl border-b border-white/10"
+          : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <a href="/" className="font-display text-xl font-bold tracking-tight text-white">
-          ORIZINO
+        {/* SVG Logo */}
+        <a href="/" className="flex items-center" aria-label="Orizino Home">
+          <img
+            src="/orizino-logo.svg"
+            alt="Orizino"
+            className="h-8 w-auto"
+            style={{ filter: "brightness(1)" }}
+          />
         </a>
 
         {/* Desktop nav */}

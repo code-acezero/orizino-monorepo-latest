@@ -710,3 +710,15 @@ html.perf-lite *::after {
 }
 @import "../profile-layouts.css";
 @import "../storefront-layouts.css";
+
+/* ── Mobile horizontal overflow fix ───────────────────────── */
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  /* Prevent GPU compositing jitter on mobile */
+  -webkit-tap-highlight-color: transparent;
+}

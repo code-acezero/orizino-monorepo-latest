@@ -12,11 +12,12 @@
     "dev:company": "npm run dev --workspace=apps/company",
     "dev": "npm run dev --workspaces --if-present",
     "build:storefront": "npm run build --workspace=apps/storefront",
-    "build:masterpanel": "npm install --os=linux --libc=glibc && npm run build --workspace=apps/masterpanel",
+    "build:masterpanel": "npm run build --workspace=apps/masterpanel",
     "build:company": "npm run build --workspace=apps/company",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "type-check": "npm run type-check --workspaces --if-present"
+    "type-check": "npm run type-check --workspaces --if-present",
+    "postinstall": "node -e \"try{const fs=require('fs'),path=require('path');const srcPkg=require.resolve('lightningcss-linux-x64-gnu/package.json');const src=path.join(path.dirname(srcPkg),'lightningcss.linux-x64-gnu.node');const lcPkg=require.resolve('lightningcss/package.json');const dst=path.join(path.dirname(lcPkg),'lightningcss.linux-x64-gnu.node');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.copyFileSync(src,dst);}}catch(e){}\""
   },
   "devDependencies": {
     "typescript": "^5"

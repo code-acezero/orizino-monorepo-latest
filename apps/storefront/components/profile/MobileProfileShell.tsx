@@ -230,7 +230,7 @@ const MobileProfileShell: React.FC<Props> = (p) => {
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed inset-0 z-[60] bg-background flex flex-col"
+            className="fixed inset-0 z-[10001] bg-background flex flex-col"
           >
             <header className="sticky top-0 z-10 backdrop-blur-xl bg-background/80 border-b border-border/40">
               <div className="relative flex items-center justify-between px-2 h-14">
@@ -254,7 +254,7 @@ const MobileProfileShell: React.FC<Props> = (p) => {
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 max-w-2xl mx-auto w-full">
+            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 max-w-2xl mx-auto w-full">
               {openTab === "profile" && (
                 <div className="space-y-4">
                   <div className="rounded-2xl bg-secondary/40 border border-border/40 p-4 space-y-4">
