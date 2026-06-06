@@ -19,60 +19,60 @@ export const useAdminRole = () => useContext(AdminRoleContext);
  */
 const PATH_TO_SECTION: Array<[RegExp, string]> = [
   // catalog
-  [/^\/origin\/products(\/|$|\?)/, "products"],
-  [/^\/origin\/categories(\/|$|\?)/, "products"],
-  [/^\/origin\/reviews(\/|$|\?)/, "products"],
-  [/^\/origin\/requests(\/|$|\?)/, "products"],
-  [/^\/origin\/showcase(\/|$|\?)/, "products"],
+  [/^\/products(\/|$|\?)/, "products"],
+  [/^\/categories(\/|$|\?)/, "products"],
+  [/^\/reviews(\/|$|\?)/, "products"],
+  [/^\/requests(\/|$|\?)/, "products"],
+  [/^\/showcase(\/|$|\?)/, "products"],
   // sales / fulfillment
-  [/^\/origin\/orders(\/|$|\?)/, "orders"],
-  [/^\/origin\/returns(\/|$|\?)/, "orders"],
-  [/^\/origin\/coupons(\/|$|\?)/, "orders"],
-  [/^\/origin\/delivery-offers(\/|$|\?)/, "orders"],
-  [/^\/origin\/couriers(\/|$|\?)/, "orders"],
-  [/^\/origin\/courier-management(\/|$|\?)/, "orders"],
-  [/^\/origin\/shipping(\/|$|\?)/, "orders"],
-  [/^\/origin\/pathao(\/|$|\?)/, "orders"],
-  [/^\/origin\/payment-gateways(\/|$|\?)/, "orders"],
-  [/^\/origin\/user-promos(\/|$|\?)/, "orders"],
+  [/^\/orders(\/|$|\?)/, "orders"],
+  [/^\/returns(\/|$|\?)/, "orders"],
+  [/^\/coupons(\/|$|\?)/, "orders"],
+  [/^\/delivery-offers(\/|$|\?)/, "orders"],
+  [/^\/couriers(\/|$|\?)/, "orders"],
+  [/^\/courier-management(\/|$|\?)/, "orders"],
+  [/^\/shipping(\/|$|\?)/, "orders"],
+  [/^\/pathao(\/|$|\?)/, "orders"],
+  [/^\/payment-gateways(\/|$|\?)/, "orders"],
+  [/^\/user-promos(\/|$|\?)/, "orders"],
   // customers / marketing
-  [/^\/origin\/customers(\/|$|\?)/, "customers"],
-  [/^\/origin\/support(\/|$|\?)/, "customers"],
-  [/^\/origin\/announcements(\/|$|\?)/, "customers"],
-  [/^\/origin\/email-/, "customers"],
+  [/^\/customers(\/|$|\?)/, "customers"],
+  [/^\/support(\/|$|\?)/, "customers"],
+  [/^\/announcements(\/|$|\?)/, "customers"],
+  [/^\/email-/, "customers"],
   [/^\/affiliate-hub(\/|$|\?)/, "affiliate"],
   // analytics
-  [/^\/origin\/customer-analytics(\/|$|\?)/, "analytics"],
-  [/^\/origin\/live-activity(\/|$|\?)/, "analytics"],
+  [/^\/customer-analytics(\/|$|\?)/, "analytics"],
+  [/^\/live-activity(\/|$|\?)/, "analytics"],
   // storefront / portfolio
-  [/^\/origin\/landing(\/|$|\?)/, "portfolio"],
-  [/^\/origin\/home(\/|$|\?)/, "portfolio"],
-  [/^\/origin\/cms-pages(\/|$|\?)/, "portfolio"],
-  [/^\/origin\/banners(\/|$|\?)/, "storefront_ui"],
-  [/^\/origin\/footer(\/|$|\?)/, "storefront_ui"],
-  [/^\/origin\/mobile-ui(\/|$|\?)/, "storefront_ui"],
-  [/^\/origin\/branding(\/|$|\?)/, "storefront_ui"],
-  [/^\/origin\/appearance(\/|$|\?)/, "storefront_ui"],
+  [/^\/landing(\/|$|\?)/, "portfolio"],
+  [/^\/home(\/|$|\?)/, "portfolio"],
+  [/^\/cms-pages(\/|$|\?)/, "portfolio"],
+  [/^\/banners(\/|$|\?)/, "storefront_ui"],
+  [/^\/footer(\/|$|\?)/, "storefront_ui"],
+  [/^\/mobile-ui(\/|$|\?)/, "storefront_ui"],
+  [/^\/branding(\/|$|\?)/, "storefront_ui"],
+  [/^\/appearance(\/|$|\?)/, "storefront_ui"],
   // growth
-  [/^\/origin\/seo(\/|$|\?)/, "seo"],
-  [/^\/origin\/tracking(\/|$|\?)/, "seo"],
-  [/^\/origin\/ai-settings(\/|$|\?)/, "ai"],
-  [/^\/origin\/recommendations(\/|$|\?)/, "ai"],
-  [/^\/origin\/call-settings(\/|$|\?)/, "settings"],
-  [/^\/origin\/telegram(\/|$|\?)/, "settings"],
+  [/^\/seo(\/|$|\?)/, "seo"],
+  [/^\/tracking(\/|$|\?)/, "seo"],
+  [/^\/ai-settings(\/|$|\?)/, "ai"],
+  [/^\/recommendations(\/|$|\?)/, "ai"],
+  [/^\/call-settings(\/|$|\?)/, "settings"],
+  [/^\/telegram(\/|$|\?)/, "settings"],
   // corporate
-  [/^\/origin\/corporate(\/|$|\?)/, "employees"],
-  [/^\/origin\/employees(\/|$|\?)/, "employees"],
+  [/^\/corporate(\/|$|\?)/, "employees"],
+  [/^\/teams(\/|$|\?)/, "employees"],
+  [/^\/employees(\/|$|\?)/, "employees"],
   // system
-  [/^\/origin\/settings(\/|$|\?)/, "settings"],
-  [/^\/origin\/db-health(\/|$|\?)/, "settings"],
-  [/^\/origin\/debug(\/|$|\?)/, "settings"],
+  [/^\/settings(\/|$|\?)/, "settings"],
+  [/^\/db-health(\/|$|\?)/, "settings"],
+  [/^\/debug(\/|$|\?)/, "settings"],
 ];
 
 function sectionForPath(path: string): string | null {
-  const cleaned = path.replace(/\/$/, "") || "/origin";
-  // Treat /origin root as always-visible to any staff member.
-  if (cleaned === "/origin") return null;
+  const cleaned = path.replace(/\/$/, "") || "/";
+  if (cleaned === "/") return null;
   for (const [re, key] of PATH_TO_SECTION) {
     if (re.test(cleaned + "/")) return key;
   }
@@ -83,24 +83,27 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  const { data: role, isLoading: roleLoading } = useQuery({
+  const { data: role, isLoading: roleLoading, isError: roleError } = useQuery({
     queryKey: ["user-admin-role", user?.id],
     queryFn: async (): Promise<AdminRole> => {
-      const { data: isAdmin } = await supabase.rpc("has_role", {
+      const { data: isAdmin, error: adminErr } = await supabase.rpc("has_role", {
         _user_id: user!.id,
         _role: "admin",
       });
+      if (adminErr) throw adminErr;
       if (isAdmin) return "admin";
 
-      const { data: isMod } = await supabase.rpc("has_role", {
+      const { data: isMod, error: modErr } = await supabase.rpc("has_role", {
         _user_id: user!.id,
         _role: "moderator",
       });
+      if (modErr) throw modErr;
       if (isMod) return "moderator";
 
       return null;
     },
     enabled: !!user,
+    retry: 2,
   });
 
   const { data: staff, isLoading: staffLoading } = useStaffSections();
@@ -109,10 +112,11 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!role) return false;
     if (role === "admin") return true;
     const section = sectionForPath(location.pathname);
-    if (!section) return true; // /origin root and unknown paths are visible
+    if (!section) return true;
     return staff?.hasAccess(section) ?? false;
   }, [role, location.pathname, staff]);
 
+  // Still resolving auth state — show loader
   if (loading || roleLoading || (role && role !== "admin" && staffLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -121,32 +125,61 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  // Single-section staff: bypass /origin dashboard and go directly to their section
-  const singleSectionRedirect = useMemo(() => {
-    if (!staff || role === "admin" || location.pathname !== "/origin") return null;
+  // Not signed in — proxy.ts should have caught this, but guard client-side too
+  if (!user) return <Navigate to="/auth" replace />;
+
+  // has_role RPC failed — could be DB misconfiguration; sign out and go to auth
+  if (roleError) return <Navigate to="/auth" replace />;
+
+  // Authenticated but no admin/moderator role assigned — show unauthorized page
+  // rather than redirecting to "/" which causes an infinite loop.
+  if (role === null) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-xl font-semibold">Access Denied</h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Your account doesn't have admin or moderator access. Contact the site owner to get access.
+        </p>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = "/auth";
+          }}
+          className="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  // Role exists but current path not allowed for this staff member
+  if (!allowed) return <Navigate to="/" replace />;
+
+  // Single-section staff: bypass dashboard and go directly to their section
+  const singleSectionRedirect = (() => {
+    if (!staff || role === "admin" || location.pathname !== "/") return null;
     const accessible = staff.accessible ?? [];
     if (accessible.length !== 1) return null;
     const sectionKey = accessible[0].key as string;
     const SECTION_URLS: Record<string, string> = {
-      products: "/origin/products",
-      orders: "/origin/orders",
-      offline_orders: "/origin/orders",
-      customers: "/origin/customers",
+      products: "/products",
+      orders: "/orders",
+      offline_orders: "/orders",
+      customers: "/customers",
       affiliate: "/affiliate-hub",
-      seo: "/origin/seo",
-      storefront_ui: "/origin/branding",
-      portfolio: "/origin/landing",
-      ai: "/origin/ai-settings",
-      analytics: "/origin/customer-analytics",
-      employees: "/origin/employees",
-      settings: "/origin/settings",
+      seo: "/seo",
+      storefront_ui: "/branding",
+      portfolio: "/landing",
+      ai: "/ai-settings",
+      analytics: "/customer-analytics",
+      employees: "/employees",
+      settings: "/settings",
     };
     return SECTION_URLS[sectionKey] ?? null;
-  }, [staff, role, location.pathname]);
+  })();
 
-  if (!user) return <Navigate to="/auth" replace />;
-  if (!role) return <Navigate to="/" replace />;
-  if (!allowed) return <Navigate to="/origin" replace />;
   if (singleSectionRedirect) return <Navigate to={singleSectionRedirect} replace />;
 
   return (

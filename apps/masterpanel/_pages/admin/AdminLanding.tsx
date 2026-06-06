@@ -1,620 +1,197 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TabsWithParam } from "@/components/admin/TabsWithParam";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { toast } from "@/lib/app-toast";
+import { useNavigate } from "@/lib/router-compat";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdminRole } from "@/components/AdminRoute";
+import { motion } from "framer-motion";
 import {
-  Rocket, Sparkles, Type, BarChart3, MessageCircle, Image as ImageIcon,
-  Plus, Trash2, Target, BookOpen, Settings2, RefreshCw, Upload, Layers,
+  Package, ShoppingCart, Users, BarChart3, Activity,
+  Globe, Search, Bot, Settings, Briefcase, Tag, FileText,
+  Shield, Users2, ChevronRight, Sparkles, Mail, Phone, Layout,
 } from "lucide-react";
-import ImageUpload from "@/components/ImageUpload";
 
-const iconOptions = ["ShoppingBag", "Shield", "Truck", "Sparkles", "Star", "Zap", "Globe", "Package", "Users", "Heart"];
-
-interface LandingConfig {
-  hero_title_line1: string;
-  hero_title_line2: string;
-  hero_subtitle: string;
-  hero_badge: string;
-  hero_cta_primary: string;
-  hero_cta_secondary: string;
-  hero_bg_url: string;
-  features: { icon: string; title: string; desc: string }[];
-  stats: { value: string; label: string }[];
-  show_stats: boolean;
-  show_features: boolean;
-  show_categories: boolean;
-  show_testimonials: boolean;
-  show_cta: boolean;
-  show_about: boolean;
-  show_mission_vision: boolean;
-  show_brand_showcase: boolean;
-  cta_title: string;
-  cta_subtitle: string;
-  cta_button: string;
-  testimonials: { name: string; text: string; rating: number }[];
-  about_title: string;
-  about_text: string;
-  mission_text: string;
-  vision_text: string;
-  showcase_image_url: string;
-  showcase_headline: string;
-  showcase_description: string;
-  showcase_cta_text: string;
-  showcase_cta_link: string;
+interface SectionCard {
+  key: string;
+  title: string;
+  description: string;
+  url: string;
+  icon: React.ElementType;
+  color: string;
+  badge?: string;
+  adminOnly?: boolean;
 }
 
-const DEFAULT: LandingConfig = {
-  hero_title_line1: "", hero_title_line2: "", hero_subtitle: "", hero_badge: "",
-  hero_cta_primary: "Start Shopping", hero_cta_secondary: "Explore Categories", hero_bg_url: "",
-  features: [], stats: [],
-  show_stats: true, show_features: true, show_categories: true, show_testimonials: false,
-  show_cta: true, show_about: true, show_mission_vision: true, show_brand_showcase: false,
-  cta_title: "", cta_subtitle: "", cta_button: "Create Account", testimonials: [],
-  about_title: "", about_text: "", mission_text: "", vision_text: "",
-  showcase_image_url: "", showcase_headline: "", showcase_description: "",
-  showcase_cta_text: "Shop Now", showcase_cta_link: "/home",
+const SECTIONS: SectionCard[] = [
+  { key: "products",      title: "Products",           description: "Manage catalog, variants, inventory & reviews", url: "/products",           icon: Package,    color: "from-violet-500/20 to-violet-600/5 border-violet-500/20 hover:border-violet-400/40" },
+  { key: "orders",        title: "Orders & Fulfillment",description: "Orders, returns, coupons, couriers & shipping", url: "/orders",             icon: ShoppingCart,color: "from-amber-500/20 to-amber-600/5 border-amber-500/20 hover:border-amber-400/40" },
+  { key: "customers",     title: "Customers",           description: "Customer profiles, segments & support tickets", url: "/customers",          icon: Users,      color: "from-sky-500/20 to-sky-600/5 border-sky-500/20 hover:border-sky-400/40" },
+  { key: "analytics",     title: "Analytics",           description: "Live activity, geo breakdown & customer insights",url: "/customer-analytics", icon: BarChart3,  color: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-400/40" },
+  { key: "storefront_ui", title: "Storefront UI",       description: "Banners, footer, mobile UI & branding",       url: "/branding",           icon: Layout,     color: "from-pink-500/20 to-pink-600/5 border-pink-500/20 hover:border-pink-400/40" },
+  { key: "portfolio",     title: "Portfolio / CMS",     description: "Landing page, home content & CMS pages",      url: "/landing",            icon: Globe,      color: "from-cyan-500/20 to-cyan-600/5 border-cyan-500/20 hover:border-cyan-400/40" },
+  { key: "seo",           title: "SEO & Tracking",      description: "Search optimization, schema, pixels & audit", url: "/seo",                icon: Search,     color: "from-orange-500/20 to-orange-600/5 border-orange-500/20 hover:border-orange-400/40" },
+  { key: "ai",            title: "AI & Recommendations",description: "AI assistant, discover engine & call routing", url: "/ai-settings",        icon: Bot,        color: "from-indigo-500/20 to-indigo-600/5 border-indigo-500/20 hover:border-indigo-400/40", badge: "AI" },
+  { key: "affiliate",     title: "Affiliate Hub",       description: "Partner programs, referral links & commissions",url: "/affiliate-hub",      icon: Tag,        color: "from-lime-500/20 to-lime-600/5 border-lime-500/20 hover:border-lime-400/40" },
+  { key: "employees",     title: "Employees & Teams",   description: "Staff roles, team assignments & section access",url: "/employees",          icon: Briefcase,  color: "from-rose-500/20 to-rose-600/5 border-rose-500/20 hover:border-rose-400/40", adminOnly: true },
+  { key: "settings",      title: "Settings",            description: "Global preferences, currency & customizer",  url: "/settings",           icon: Settings,   color: "from-zinc-500/20 to-zinc-600/5 border-zinc-500/20 hover:border-zinc-400/40", adminOnly: true },
+  { key: "dashboard",     title: "Analytics Dashboard", description: "Revenue, order trends, geographic KPIs",     url: "/home",               icon: Activity,   color: "from-teal-500/20 to-teal-600/5 border-teal-500/20 hover:border-teal-400/40" },
+];
+
+const card = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.045, duration: 0.32, ease: "easeOut" } }),
 };
 
-const AdminLanding = () => {
-  const qc = useQueryClient();
-  const [form, setForm] = useState<LandingConfig>(DEFAULT);
-  const [logoUrl, setLogoUrl] = useState("");
-  const [faviconUrl, setFaviconUrl] = useState("");
-  const [splashVersion, setSplashVersion] = useState<number>(1);
-  const [resetPending, setResetPending] = useState(false);
+export default function AdminLanding() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const role = useAdminRole();
 
-  /* ── Landing config ── */
-  const { data: config } = useQuery({
-    queryKey: ["admin-landing-config"],
+  const { data: profile } = useQuery({
+    queryKey: ["admin-profile-landing", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("site_settings").select("value").eq("key", "landing_config").maybeSingle();
-      return (data?.value as any) || {};
+      const { data } = await supabase.from("profiles").select("full_name").eq("id", user!.id).single();
+      return data;
     },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
   });
-  useEffect(() => {
-    if (config && typeof config === "object") setForm({ ...DEFAULT, ...config });
-  }, [config]);
 
-  /* ── Logo URL + splash version ── */
-  const { data: siteSettings } = useQuery({
-    queryKey: ["admin-site-settings-branding"],
+  const { data: teamsSummary } = useQuery({
+    queryKey: ["teams-summary"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key,value")
-        .in("key", ["logo_url", "favicon_url", "splash_version"]);
-      const map: Record<string, any> = {};
-      data?.forEach((r) => {
-        const v = r.value;
-        map[r.key] = typeof v === "object" && v !== null ? (v as any).value ?? v : v;
-      });
-      return map;
+      const [teamsRes, membersRes] = await Promise.all([
+        supabase.from("teams").select("id, name, color"),
+        supabase.from("team_members").select("team_id"),
+      ]);
+      return { count: (teamsRes.data ?? []).length, memberCount: (membersRes.data ?? []).length, teams: teamsRes.data ?? [] };
     },
-  });
-  useEffect(() => {
-    if (!siteSettings) return;
-    if (siteSettings.logo_url) setLogoUrl(String(siteSettings.logo_url));
-    if (siteSettings.favicon_url) setFaviconUrl(String(siteSettings.favicon_url));
-    if (siteSettings.splash_version) setSplashVersion(Number(siteSettings.splash_version) || 1);
-  }, [siteSettings]);
-
-  /* ── Save landing config ── */
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("site_settings").upsert(
-        { key: "landing_config", value: form as any, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-landing-config"] });
-      qc.invalidateQueries({ queryKey: ["site-settings-landing"] });
-      toast.success("Landing page saved");
-    },
-    onError: (e: any) => toast.error(e.message),
+    staleTime: 5 * 60 * 1000,
   });
 
-  /* ── Save logo URL ── */
-  const saveLogoMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const { error } = await supabase.from("site_settings").upsert(
-        { key: "logo_url", value: url as any, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-      if (error) throw error;
+  const { data: quickStats } = useQuery({
+    queryKey: ["landing-quick-stats"],
+    queryFn: async () => {
+      const [ordersRes, productsRes, customersRes] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      ]);
+      return { orders: ordersRes.count ?? 0, products: productsRes.count ?? 0, customers: customersRes.count ?? 0 };
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
-      qc.invalidateQueries({ queryKey: ["site-settings-landing"] });
-      toast.success("Logo saved — company site will reflect the new logo");
-    },
-    onError: (e: any) => toast.error(e.message),
+    staleTime: 5 * 60 * 1000,
   });
 
-
-  /* ── Save favicon URL ── */
-  const saveFaviconMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const { error } = await supabase.from("site_settings").upsert(
-        { key: "favicon_url", value: url as any, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
-      toast.success("Favicon saved — company site will use the new favicon");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  /* ── Reset splash screen ── */
-  const handleResetSplash = async () => {
-    setResetPending(true);
-    try {
-      const newVersion = splashVersion + 1;
-      const { error } = await supabase.from("site_settings").upsert(
-        { key: "splash_version", value: newVersion as any, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
-      if (error) throw error;
-      setSplashVersion(newVersion);
-      qc.invalidateQueries({ queryKey: ["admin-site-settings-branding"] });
-      toast.success(`Splash reset to v${newVersion} — all visitors will see it again on next visit`);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setResetPending(false);
-    }
-  };
-
-  /* ── Helpers ── */
-  const updateFeature = (idx: number, field: string, value: string) => {
-    const features = [...form.features];
-    features[idx] = { ...features[idx], [field]: value };
-    setForm({ ...form, features });
-  };
-  const addFeature = () => setForm({ ...form, features: [...form.features, { icon: "Sparkles", title: "", desc: "" }] });
-  const removeFeature = (idx: number) => setForm({ ...form, features: form.features.filter((_, i) => i !== idx) });
-
-  const updateStat = (idx: number, field: string, value: string) => {
-    const stats = [...form.stats];
-    stats[idx] = { ...stats[idx], [field]: value };
-    setForm({ ...form, stats });
-  };
-  const addStat = () => setForm({ ...form, stats: [...form.stats, { value: "", label: "" }] });
-  const removeStat = (idx: number) => setForm({ ...form, stats: form.stats.filter((_, i) => i !== idx) });
-
-  const updateTestimonial = (idx: number, field: string, value: any) => {
-    const testimonials = [...form.testimonials];
-    testimonials[idx] = { ...testimonials[idx], [field]: value };
-    setForm({ ...form, testimonials });
-  };
-  const addTestimonial = () => setForm({ ...form, testimonials: [...form.testimonials, { name: "", text: "", rating: 5 }] });
-  const removeTestimonial = (idx: number) => setForm({ ...form, testimonials: form.testimonials.filter((_, i) => i !== idx) });
+  const firstName = profile?.full_name?.split(" ")[0] || "Admin";
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const visibleSections = useMemo(() => role === "admin" ? SECTIONS : SECTIONS.filter((s) => !s.adminOnly), [role]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-display font-bold">Landing Page</h1>
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          {saveMutation.isPending ? "Saving..." : "Save Changes"}
-        </Button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <motion.h1 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="text-3xl font-display font-bold">
+            {greeting}, {firstName} 👋
+          </motion.h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {role === "admin" ? "Master control center — full access" : "Your assigned sections are shown below"}
+          </p>
+        </div>
+        {quickStats && (
+          <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 flex-wrap">
+            {[
+              { label: "Orders", value: quickStats.orders, icon: ShoppingCart },
+              { label: "Products", value: quickStats.products, icon: Package },
+              { label: "Customers", value: quickStats.customers, icon: Users },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="flex items-center gap-1.5 bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs">
+                <Icon className="w-3.5 h-3.5 text-primary" />
+                <span className="font-semibold text-foreground">{value.toLocaleString()}</span>
+                <span className="text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </div>
 
-      <TabsWithParam defaultTab="content" basePath="/origin/landing" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="content"><Rocket className="w-4 h-4 mr-1" /> Content</TabsTrigger>
-          <TabsTrigger value="sections"><Settings2 className="w-4 h-4 mr-1" /> Sections</TabsTrigger>
-          <TabsTrigger value="branding"><Layers className="w-4 h-4 mr-1" /> Logo & Splash</TabsTrigger>
-        </TabsList>
-
-        {/* ═══ CONTENT TAB ═══ */}
-        <TabsContent value="content">
-          <Card>
-            <CardHeader>
-              <CardTitle>Landing Page Content</CardTitle>
-              <CardDescription>Configure all sections of the company landing page</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="multiple" defaultValue={["hero"]} className="space-y-2">
-
-                {/* HERO */}
-                <AccordionItem value="hero" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-primary" /> Hero Section</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Title Line 1</Label>
-                        <Input value={form.hero_title_line1} onChange={(e) => setForm({ ...form, hero_title_line1: e.target.value })} placeholder="WEAR THE" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Title Line 2 (outline stroke)</Label>
-                        <Input value={form.hero_title_line2} onChange={(e) => setForm({ ...form, hero_title_line2: e.target.value })} placeholder="EXTRAORDINARY" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Subtitle</Label>
-                      <Textarea value={form.hero_subtitle} onChange={(e) => setForm({ ...form, hero_subtitle: e.target.value })} rows={2} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Badge Text</Label>
-                      <Input value={form.hero_badge} onChange={(e) => setForm({ ...form, hero_badge: e.target.value })} placeholder="New Collection" />
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Primary CTA</Label>
-                        <Input value={form.hero_cta_primary} onChange={(e) => setForm({ ...form, hero_cta_primary: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Secondary CTA</Label>
-                        <Input value={form.hero_cta_secondary} onChange={(e) => setForm({ ...form, hero_cta_secondary: e.target.value })} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Hero Background Image</Label>
-                      <ImageUpload bucket="banners" folder="landing" value={form.hero_bg_url} onUploaded={(url) => setForm({ ...form, hero_bg_url: url })} />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* ABOUT */}
-                <AccordionItem value="about" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" /> About Us / Brand Story</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Section Title</Label>
-                      <Input value={form.about_title} onChange={(e) => setForm({ ...form, about_title: e.target.value })} placeholder="Our Story" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Brand Story Text</Label>
-                      <p className="text-xs text-muted-foreground">This text powers the cinematic word-reveal section. Make it punchy and expressive.</p>
-                      <Textarea value={form.about_text} onChange={(e) => setForm({ ...form, about_text: e.target.value })} rows={5} placeholder="We believe fashion is more than clothing — it is a language..." />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* MISSION & VISION */}
-                <AccordionItem value="mission" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><Target className="w-4 h-4 text-primary" /> Mission & Vision</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Mission Statement</Label>
-                      <Textarea value={form.mission_text} onChange={(e) => setForm({ ...form, mission_text: e.target.value })} rows={3} placeholder="Our mission is..." />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Vision Statement</Label>
-                      <Textarea value={form.vision_text} onChange={(e) => setForm({ ...form, vision_text: e.target.value })} rows={3} placeholder="Our vision is..." />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* SHOWCASE */}
-                <AccordionItem value="showcase" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><ImageIcon className="w-4 h-4 text-primary" /> Brand Showcase</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Showcase Image</Label>
-                      <ImageUpload bucket="banners" folder="showcase" value={form.showcase_image_url} onUploaded={(url) => setForm({ ...form, showcase_image_url: url })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Headline</Label>
-                      <Input value={form.showcase_headline} onChange={(e) => setForm({ ...form, showcase_headline: e.target.value })} placeholder="Premium Quality" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea value={form.showcase_description} onChange={(e) => setForm({ ...form, showcase_description: e.target.value })} rows={4} />
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>CTA Text</Label>
-                        <Input value={form.showcase_cta_text} onChange={(e) => setForm({ ...form, showcase_cta_text: e.target.value })} placeholder="Shop Now" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>CTA Link</Label>
-                        <Input value={form.showcase_cta_link} onChange={(e) => setForm({ ...form, showcase_cta_link: e.target.value })} placeholder="/" />
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* FEATURES */}
-                <AccordionItem value="features" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> Features ({form.features.length})</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    {form.features.map((f, i) => (
-                      <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-secondary/30">
-                        <select value={f.icon} onChange={(e) => updateFeature(i, "icon", e.target.value)} className="bg-background border border-border rounded-lg px-2 py-1.5 text-sm">
-                          {iconOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        <Input value={f.title} onChange={(e) => updateFeature(i, "title", e.target.value)} placeholder="Title" className="flex-1" />
-                        <Input value={f.desc} onChange={(e) => updateFeature(i, "desc", e.target.value)} placeholder="Description" className="flex-1" />
-                        <Button variant="ghost" size="icon" onClick={() => removeFeature(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addFeature}><Plus className="w-4 h-4 mr-1" /> Add Feature</Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* STATS */}
-                <AccordionItem value="stats" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> Stats ({form.stats.length})</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    {form.stats.map((s, i) => (
-                      <div key={i} className="flex gap-3 items-center p-3 rounded-xl bg-secondary/30">
-                        <Input value={s.value} onChange={(e) => updateStat(i, "value", e.target.value)} placeholder="10K+" className="w-32" />
-                        <Input value={s.label} onChange={(e) => updateStat(i, "label", e.target.value)} placeholder="Happy Customers" className="flex-1" />
-                        <Button variant="ghost" size="icon" onClick={() => removeStat(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addStat}><Plus className="w-4 h-4 mr-1" /> Add Stat</Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* TESTIMONIALS */}
-                <AccordionItem value="testimonials" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><MessageCircle className="w-4 h-4 text-primary" /> Testimonials ({form.testimonials.length})</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    {form.testimonials.map((t, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-secondary/30 space-y-2">
-                        <div className="flex gap-3">
-                          <Input value={t.name} onChange={(e) => updateTestimonial(i, "name", e.target.value)} placeholder="Customer name" className="w-48" />
-                          <select value={t.rating} onChange={(e) => updateTestimonial(i, "rating", Number(e.target.value))} className="bg-background border border-border rounded-lg px-2 py-1.5 text-sm">
-                            {[1,2,3,4,5].map((r) => <option key={r} value={r}>{r} stars</option>)}
-                          </select>
-                          <Button variant="ghost" size="icon" onClick={() => removeTestimonial(i)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                        </div>
-                        <Textarea value={t.text} onChange={(e) => updateTestimonial(i, "text", e.target.value)} placeholder="What they said..." rows={2} />
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addTestimonial}><Plus className="w-4 h-4 mr-1" /> Add Testimonial</Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* CTA */}
-                <AccordionItem value="cta" className="border rounded-xl px-4">
-                  <AccordionTrigger className="text-sm font-semibold">
-                    <span className="flex items-center gap-2"><Type className="w-4 h-4 text-primary" /> Call to Action</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>CTA Title</Label>
-                      <Input value={form.cta_title} onChange={(e) => setForm({ ...form, cta_title: e.target.value })} placeholder="Orizino Awaits You" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CTA Subtitle</Label>
-                      <Input value={form.cta_subtitle} onChange={(e) => setForm({ ...form, cta_subtitle: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Button Text</Label>
-                      <Input value={form.cta_button} onChange={(e) => setForm({ ...form, cta_button: e.target.value })} />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-              </Accordion>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ═══ SECTIONS & VISIBILITY TAB ═══ */}
-        <TabsContent value="sections">
-          <Card>
-            <CardHeader>
-              <CardTitle>Section Visibility</CardTitle>
-              <CardDescription>Toggle which sections appear on the company landing page</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { key: "show_about", label: "About Us / Brand Story", desc: "Scroll-driven word reveal" },
-                { key: "show_mission_vision", label: "Mission & Vision", desc: "Appears in Brand Story section" },
-                { key: "show_brand_showcase", label: "Brand Showcase", desc: "Featured product spotlight" },
-                { key: "show_stats", label: "Stats Strip", desc: "Animated counters between sections" },
-                { key: "show_features", label: "Brand Values", desc: "Scroll-staggered value cards" },
-                { key: "show_categories", label: "Categories Preview", desc: "Browse by category grid" },
-                { key: "show_testimonials", label: "Testimonials", desc: "Scrolling testimonial ticker" },
-                { key: "show_cta", label: "Final CTA Section", desc: "Full-screen call to action" },
-              ].map(({ key, label, desc }) => (
-                <div key={key} className="flex items-center justify-between py-3 border-b border-border/20 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-                  </div>
-                  <Switch checked={(form as any)[key]} onCheckedChange={(v) => setForm({ ...form, [key]: v })} />
-                </div>
-              ))}
-              <div className="pt-2">
-                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
-                  {saveMutation.isPending ? "Saving..." : "Save Visibility Settings"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ═══ LOGO & SPLASH TAB ═══ */}
-        <TabsContent value="branding">
-          <div className="space-y-4">
-
-            {/* Logo upload card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-primary" /> Company Logo
-                </CardTitle>
-                <CardDescription>
-                  The logo shown in the navigation bar and the cinematic splash screen on the company site.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {logoUrl && (
-                  <div className="p-4 rounded-xl bg-[#080808] border border-border/30 flex items-center justify-center">
-                    <img src={logoUrl} alt="Current logo" className="h-14 w-auto object-contain" />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Upload New Logo</Label>
-                  <p className="text-xs text-muted-foreground">
-                    SVG or PNG recommended. The logo is displayed on a dark background — use a light-colored version.
-                  </p>
-                  <ImageUpload
-                    bucket="site-assets"
-                    folder="branding"
-                    value={logoUrl}
-                    onUploaded={(url) => {
-                      setLogoUrl(url);
-                      saveLogoMutation.mutate(url);
-                    }}
-                  />
-                </div>
-                {logoUrl && (
-                  <div className="space-y-2">
-                    <Label>Direct URL</Label>
-                    <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="font-mono text-xs" />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => saveLogoMutation.mutate(logoUrl)}
-                      disabled={saveLogoMutation.isPending}
-                    >
-                      {saveLogoMutation.isPending ? "Saving..." : "Save URL"}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-
-            {/* Favicon upload card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-primary" /> Company Favicon
-                </CardTitle>
-                <CardDescription>
-                  The small icon shown in browser tabs and bookmarks for the company site.
-                  Use a square PNG or ICO, ideally 32×32 or 64×64 px.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {faviconUrl && (
-                  <div className="p-4 rounded-xl bg-[#080808] border border-border/30 flex items-center gap-4">
-                    <img src={faviconUrl} alt="Current favicon" className="h-8 w-8 object-contain" />
-                    <span className="text-xs text-muted-foreground font-mono truncate">{faviconUrl}</span>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Upload New Favicon</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Square PNG recommended (32×32 or 64×64). Will appear in the browser tab for the company site.
-                  </p>
-                  <ImageUpload
-                    bucket="site-assets"
-                    folder="branding"
-                    value={faviconUrl}
-                    onUploaded={(url) => {
-                      setFaviconUrl(url);
-                      saveFaviconMutation.mutate(url);
-                    }}
-                  />
-                </div>
-                {faviconUrl && (
-                  <div className="space-y-2">
-                    <Label>Direct URL</Label>
-                    <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://..." className="font-mono text-xs" />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => saveFaviconMutation.mutate(faviconUrl)}
-                      disabled={saveFaviconMutation.isPending}
-                    >
-                      {saveFaviconMutation.isPending ? "Saving..." : "Save URL"}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Splash screen control card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5 text-primary" /> Cinematic Splash Screen
-                </CardTitle>
-                <CardDescription>
-                  The full-screen intro animation shown to first-time visitors on the company site.
-                  It plays once per device and is then suppressed.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* How it works */}
-                <div className="rounded-xl border border-border/30 bg-secondary/20 p-4 space-y-2">
-                  <p className="text-sm font-semibold">How it works</p>
-                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Each visitor sees the splash <strong>once</strong> — it stores a version key in their browser.</li>
-                    <li>Clicking "Reset for All Visitors" increments the version. Every browser with the old version will see the splash again on their next visit.</li>
-                    <li>Current version: <strong className="text-foreground">v{splashVersion}</strong></li>
-                  </ul>
-                </div>
-
-                {/* Preview info */}
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                  <p className="text-sm font-semibold text-primary mb-1">Splash content</p>
-                  <p className="text-xs text-muted-foreground">
-                    The splash shows the logo above and the tagline <em>"Premium Fashion"</em>.
-                    To update the logo shown in the splash, use the <strong>Company Logo</strong> card above.
-                  </p>
-                </div>
-
-                {/* Reset button */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="destructive"
-                    onClick={handleResetSplash}
-                    disabled={resetPending}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${resetPending ? "animate-spin" : ""}`} />
-                    {resetPending ? "Resetting..." : `Reset Splash for All Visitors`}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Will advance to v{splashVersion + 1}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
+      {/* Teams bar (admin only) */}
+      {role === "admin" && teamsSummary && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="flex items-center gap-4 rounded-xl border border-border/60 bg-card/50 px-5 py-3.5 cursor-pointer group"
+          onClick={() => navigate("/teams")}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users2 className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {teamsSummary.count === 0
+                  ? "No teams created yet"
+                  : `${teamsSummary.count} team${teamsSummary.count !== 1 ? "s" : ""} · ${teamsSummary.memberCount} member${teamsSummary.memberCount !== 1 ? "s" : ""}`}
+              </p>
+              <p className="text-xs text-muted-foreground">Manage teams and section access</p>
+            </div>
           </div>
-        </TabsContent>
+          <div className="ml-auto flex items-center gap-3">
+            {teamsSummary.teams.slice(0, 5).map((t: any) => (
+              <span key={t.id} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: `${t.color}22`, color: t.color, border: `1px solid ${t.color}44` }}>
+                {t.name}
+              </span>
+            ))}
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
+        </motion.div>
+      )}
 
-      </TabsWithParam>
+      {/* Section grid */}
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Control Sections</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {visibleSections.map((sec, i) => {
+            const Icon = sec.icon;
+            return (
+              <motion.div key={sec.key} custom={i} variants={card} initial="hidden" animate="visible"
+                className={`relative group rounded-xl border bg-gradient-to-br ${sec.color} p-5 cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+                onClick={() => navigate(sec.url)}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-background/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  {sec.badge && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30">{sec.badge}</span>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 right-4" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground mb-1">{sec.title}</h3>
+                <p className="text-xs text-muted-foreground leading-snug">{sec.description}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
+        {[
+          { label: "Email Campaigns", url: "/email-campaigns", icon: Mail },
+          { label: "Announcements",   url: "/announcements",   icon: Sparkles },
+          { label: "Live Activity",   url: "/live-activity",   icon: Activity },
+          { label: "DB Health",       url: "/db-health",       icon: Shield },
+          { label: "Audit Log",       url: "/corporate/audit-log", icon: FileText },
+          { label: "Call Center",     url: "/call-settings",   icon: Phone },
+        ].map(({ label, url, icon: Icon }) => (
+          <button key={url} onClick={() => navigate(url)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border/50 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:border-border transition-all">
+            <Icon className="w-3 h-3" />{label}
+          </button>
+        ))}
+      </div>
     </div>
   );
-};
-
-export default AdminLanding;
+}

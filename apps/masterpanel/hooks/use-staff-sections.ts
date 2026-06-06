@@ -5,11 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Returns the set of admin sections the current user can access.
- * Admins implicitly have access to every section.
+ * Access is resolved from BOTH:
+ *   1. Direct grants (staff_section_access)
+ *   2. Team membership (team_members → team_section_access)
  *
- * Sections are sourced from public.staff_sections; user grants from
- * public.staff_section_access. Helper `public.has_section_access(uid, key)`
- * is the canonical check on the server.
+ * Admins implicitly bypass all checks and see everything.
  */
 export function useStaffSections() {
   const { user } = useAuth();
@@ -17,14 +17,29 @@ export function useStaffSections() {
     queryKey: ["staff-sections", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [sectionsRes, accessRes, adminRes] = await Promise.all([
+      const [sectionsRes, adminRes, directAccessRes, teamMembersRes, teamSectionRes] = await Promise.all([
         supabase.from("staff_sections").select("*").order("sort_order"),
-        supabase.from("staff_section_access").select("section").eq("user_id", user!.id),
         supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" }),
+        supabase.from("staff_section_access").select("section").eq("user_id", user!.id),
+        supabase.from("team_members").select("team_id").eq("user_id", user!.id),
+        supabase.from("team_section_access").select("team_id, section"),
       ]);
+
       const sections = sectionsRes.data ?? [];
       const isAdmin = !!adminRes.data;
-      const grantedKeys = new Set((accessRes.data ?? []).map((r) => r.section));
+
+      // Merge direct grants + team-based grants
+      const directKeys = new Set((directAccessRes.data ?? []).map((r) => r.section));
+
+      const userTeamIds = new Set((teamMembersRes.data ?? []).map((r: any) => r.team_id));
+      const teamKeys = new Set(
+        (teamSectionRes.data ?? [])
+          .filter((r: any) => userTeamIds.has(r.team_id))
+          .map((r: any) => r.section)
+      );
+
+      const grantedKeys = new Set([...directKeys, ...teamKeys]);
+
       return {
         isAdmin,
         sections,

@@ -21,8 +21,28 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh the session — must not run next() before this
-  await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Public paths — never block
+  const isPublic =
+    pathname === "/auth" ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    /\.(svg|png|jpg|jpeg|gif|webp|ico|woff2?)$/.test(pathname);
+
+  if (!isPublic && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth";
+    return NextResponse.redirect(url);
+  }
+
+  // Authenticated user visiting /auth → send to root (control center)
+  if (pathname === "/auth" && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
