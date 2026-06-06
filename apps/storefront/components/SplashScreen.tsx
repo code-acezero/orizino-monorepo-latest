@@ -1,17 +1,13 @@
 "use client";
 import React from "react";
+import BrandLoader from "./loaders/BrandLoader";
 
 interface SplashScreenProps {
   visible: boolean;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ visible }) => {
-  if (!visible) return null;
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background pointer-events-none transition-opacity duration-500">
-      <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  return <BrandLoader show={visible} withBackdrop size={220} />;
 };
 
 export default SplashScreen;
