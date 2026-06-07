@@ -6,7 +6,7 @@ import SectionLoader from "@/components/loaders/SectionLoader";
 
 /**
  * Route transition overlay.
- * - Section switches within the admin panel (/origin/*) → platinum loader.
+ * - Section switches within the admin panel (/, /admin/*, /seo/*, etc.) → platinum loader.
  * - Page switches across the storefront → stroke-fill logo loader.
  */
 const RouteTransitionLoader: React.FC = () => {
@@ -34,7 +34,7 @@ const RouteTransitionLoader: React.FC = () => {
       const from = lastSettledPathRef.current;
       const to = pathname;
       // Section switch = navigating within the same top-level path segment
-      // (e.g. /origin/* ↔ /origin/*, /profile/* ↔ /profile/*).
+      // (e.g. /admin/* ↔ /admin/*, /seo/* ↔ /seo/*, /profile/* ↔ /profile/*).
       // Page switch = crossing into a different root (e.g. /home → /shop).
       const rootOf = (p: string) => {
         const seg = p.split("/").filter(Boolean)[0];
@@ -42,10 +42,10 @@ const RouteTransitionLoader: React.FC = () => {
       };
       const isSectionSwitch = from !== to && rootOf(from) === rootOf(to);
       setMode(isSectionSwitch ? "section" : "page");
-      // Only show overlay if navigation takes >120ms — avoids flash on instant routes.
-      showTimer = setTimeout(() => setVisible(true), 120);
+      // Show overlay quickly for snappy feedback; 30ms avoids flicker on cache hits.
+      showTimer = setTimeout(() => setVisible(true), 30);
     } else {
-      hideTimer = setTimeout(() => setVisible(false), 150);
+      hideTimer = setTimeout(() => setVisible(false), 80);
     }
     return () => {
       if (showTimer) clearTimeout(showTimer);

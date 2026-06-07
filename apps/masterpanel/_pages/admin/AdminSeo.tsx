@@ -520,7 +520,7 @@ const SeoGlobalTab = () => {
 /* ───────── Page shell ───────── */
 const AdminSeo = () => {
   useSeoMeta("admin-seo", "SEO — Admin");
-  const [tab, setTab] = useTabParam("dashboard", "/origin/seo");
+  const [tab, setTab] = useTabParam("dashboard", "/seo");
 
   return (
     <div className="space-y-6">

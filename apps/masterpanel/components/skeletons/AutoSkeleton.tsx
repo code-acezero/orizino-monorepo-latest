@@ -41,7 +41,7 @@ const ROUTE_MAP: Array<{ test: (path: string, search: string) => boolean; varian
   { test: (p) => /\/email-campaigns\/[^/]+|\/landing|\/home(\?|$)|\/cms-pages\/|\/showcase|\/banners|\/branding|\/footer|\/mobile-ui/.test(p), variant: "form" },
 
   // Dashboards / analytics / activity / debug
-  { test: (p) => /^\/origin$|\/origin\/$|\/live-activity|\/debug|\/tracking|\/audit-log|\/email-provider/.test(p), variant: "dashboard" },
+  { test: (p) => /^\/$|\/admin|\/live-activity|\/debug|\/tracking|\/audit-log|\/email-provider/.test(p), variant: "dashboard" },
 
   // Admin card grids
   { test: (p) => /\/categories|\/announcements|\/banners$|\/delivery-offers|\/user-promos|\/returns/.test(p), variant: "cards" },

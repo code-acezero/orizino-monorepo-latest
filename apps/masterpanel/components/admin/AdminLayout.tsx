@@ -60,16 +60,39 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
         .slice(0, 2)
     : "AD";
 
-  const pageMeta = useMemo(() => {
-    const match = allAdminItems.find((i) =>
-      i.url === "/origin"
-        ? location.pathname === "/origin"
-        : location.pathname.startsWith(i.url)
-    );
-    return match ?? { title: "Admin", description: "" };
+  // Resolve the canonical path (strip trailing slash)
+  const normalisedPath = useMemo(() => {
+    const p = location.pathname.replace(/\/$/, "") || "/";
+    return p;
   }, [location.pathname]);
 
-  const isRoot = location.pathname === "/origin";
+  // Derive section name from the first path segment
+  const sectionMeta = useMemo((): { name: string; sub: string } => {
+    const seg = normalisedPath.split("/")[1] ?? "";
+    const map: Record<string, string> = {
+      "":          "Master Panel",
+      "admin":     "Sales Management",
+      "seo":       "SEO Management",
+      "affiliate": "Affiliate Hub",
+      "brandconfig": "Branding Config",
+      "backend":   "Backend Controls",
+      "settings":  "Site Settings",
+      "corporate": "Corporate",
+      "master":    "All Sections",
+    };
+    return { name: "Control Panel", sub: map[seg] ?? "Admin" };
+  }, [normalisedPath]);
+
+  const pageMeta = useMemo(() => {
+    const match = allAdminItems.find((i) =>
+      i.url === "/"
+        ? normalisedPath === "/"
+        : normalisedPath === i.url || normalisedPath.startsWith(i.url + "/")
+    );
+    return match ?? { title: "", description: "" };
+  }, [normalisedPath]);
+
+  const isRoot = normalisedPath === "/";
 
   // Mobile and tablet use the mobile shell to avoid sidebar layout breakage.
   if (isMobile || isTablet) {
@@ -85,11 +108,15 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             <SidebarTrigger className="mr-3 text-muted-foreground hover:text-foreground" />
 
             <div className="flex items-center gap-1.5 text-sm min-w-0">
-              <span className="text-muted-foreground">Admin</span>
+              <span className="text-muted-foreground">{sectionMeta.name}</span>
               <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
-              <span className="font-medium text-foreground truncate">
-                {isRoot ? "Dashboard" : pageMeta.title}
-              </span>
+              <span className={isRoot || !pageMeta.title ? "font-medium text-foreground" : "text-muted-foreground"}>{sectionMeta.sub}</span>
+              {!isRoot && pageMeta.title && (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                  <span className="font-medium text-foreground truncate">{pageMeta.title}</span>
+                </>
+              )}
             </div>
 
             <button

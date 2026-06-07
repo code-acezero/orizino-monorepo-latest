@@ -250,7 +250,7 @@ const AdminPaymentGateways = () => {
         </CardContent>
       </Card>
 
-      <TabsWithParam defaultTab="personal" basePath="/origin/payment-gateways" className="space-y-4">
+      <TabsWithParam defaultTab="personal" basePath="/admin/payment-gateways" className="space-y-4">
         <TabsList className="flex-wrap">
           <TabsTrigger value="personal"><Smartphone className="w-4 h-4 mr-1" /> Personal Accounts</TabsTrigger>
           <TabsTrigger value="stripe"><CreditCard className="w-4 h-4 mr-1" /> Stripe</TabsTrigger>
@@ -504,12 +504,12 @@ const StripeConnectionPanel: React.FC = () => {
           Test Connection
         </Button>
         <Button type="button" variant="outline" size="sm" asChild className="rounded-xl">
-          <a href="/origin/api-keys?secret=STRIPE_SECRET_KEY" >
+          <a href="/backend/debug?tab=keys" >
             <KeyRound className="w-4 h-4 mr-1" /> Add / Update Secret Key
           </a>
         </Button>
         <Button type="button" variant="outline" size="sm" asChild className="rounded-xl">
-          <a href="/origin/api-keys?secret=STRIPE_WEBHOOK_SECRET" >
+          <a href="/backend/debug?tab=keys" >
             <KeyRound className="w-4 h-4 mr-1" /> Webhook Secret
           </a>
         </Button>

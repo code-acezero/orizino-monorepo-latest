@@ -363,7 +363,7 @@ function SectionCard({
 
 const AdminBranding = () => {
   const qc = useQueryClient();
-  const [tab, setTab] = useTabParam("overview", "/origin/branding");
+  const [tab, setTab] = useTabParam("overview", "/brandconfig");
   const show = (k: string) => tab === "overview" || tab === k;
   const [logoUrl, setLogoUrl] = useState("");
   const [iconUrl, setIconUrl] = useState("");

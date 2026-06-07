@@ -47,7 +47,7 @@ const AdminOrders = () => {
   const [bulkStatus, setBulkStatus] = useState<string | null>(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [courierOpen, setCourierOpen] = useState(false);
-  const [tab, setTab] = useTabParam("orders", "/origin/orders");
+  const [tab, setTab] = useTabParam("orders", "/admin/orders");
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],

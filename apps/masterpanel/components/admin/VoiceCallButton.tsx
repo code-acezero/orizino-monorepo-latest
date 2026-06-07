@@ -7,7 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getRTCConfiguration } from "@/lib/ice-servers";
 import { CallRecorder, uploadCallRecording } from "@/lib/call-recorder";
-import { syncRecordingToDrive } from "@/lib/drive-backup.functions";
+// drive-backup is server-only; loaded dynamically to avoid SSR evaluation
+const syncRecordingToDrive = async (...args: Parameters<typeof import("@/lib/drive-backup.functions")["syncRecordingToDrive"]>) => {
+  const mod = await import("@/lib/drive-backup.functions");
+  return mod.syncRecordingToDrive(...args);
+};
 
 interface VoiceCallButtonProps {
   conversationId: string;

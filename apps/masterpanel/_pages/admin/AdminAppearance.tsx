@@ -23,7 +23,7 @@ const AdminAppearance: React.FC = () => {
       <Tabs
         value={tab}
         onValueChange={(v) =>
-          navigate({ to: "/origin/appearance", search: { tab: v } as any, replace: true })
+          navigate({ to: "/brandconfig/appearance", search: { tab: v } as any, replace: true })
         }
       >
         <TabsList>

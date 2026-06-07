@@ -475,22 +475,22 @@ export default function CommerceSettingsPanel() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <a href="/origin/payment-gateways" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
+            <a href="/admin/payment-gateways" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
               <CreditCard className="w-4 h-4 mb-1.5 text-primary" />
               <div className="font-medium">Payment Gateways</div>
               <div className="text-xs text-muted-foreground">Stripe / SSLCommerz</div>
             </a>
-            <a href="/origin/shipping" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
+            <a href="/admin/shipping" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
               <Truck className="w-4 h-4 mb-1.5 text-primary" />
               <div className="font-medium">Shipping</div>
               <div className="text-xs text-muted-foreground">Couriers & fees</div>
             </a>
-            <a href="/origin/branding" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
+            <a href="/brandconfig" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
               <FileText className="w-4 h-4 mb-1.5 text-primary" />
               <div className="font-medium">Brand Identity</div>
               <div className="text-xs text-muted-foreground">Used on invoices</div>
             </a>
-            <a href="/origin/email-provider" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
+            <a href="/seo/email-provider" className="p-3 rounded-xl border border-border/30 hover:bg-secondary/40 transition">
               <Mail className="w-4 h-4 mb-1.5 text-primary" />
               <div className="font-medium">Email Provider</div>
               <div className="text-xs text-muted-foreground">Sends invoices</div>

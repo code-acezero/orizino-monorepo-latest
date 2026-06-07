@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/auth" && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url); // → Master Panel home
   }
 
   return supabaseResponse;

@@ -23,6 +23,35 @@ import {
 } from "@/components/ui/sidebar";
 import { adminNav, type AdminNavItem } from "./admin-nav";
 
+const SECTION_LABELS: Record<string, string> = {
+  "":          "Admin Management",
+  "admin":     "Sales Management",
+  "seo":       "SEO Management",
+  "affiliate": "Affiliate Hub",
+  "brandconfig": "Branding Config",
+  "backend":   "Backend Controls",
+  "settings":  "Site Settings",
+  "corporate": "Corporate",
+  "master":    "All Sections",
+};
+
+// Maps a URL path segment to which adminNav section labels to show.
+// "overview" is always shown (the Dashboard item).
+// All nav section labels (used for the master control view)
+const ALL_NAV_LABELS = ["Overview", "Admin", "SEO", "Affiliate", "Brand Config", "Backend", "Settings", "Corporate"];
+
+const SEGMENT_TO_NAV_LABELS: Record<string, string[]> = {
+  "":            ["Overview"],           // master panel home — only back-link
+  "admin":       ["Overview", "Admin"],
+  "seo":         ["Overview", "SEO"],
+  "affiliate":   ["Overview", "Affiliate"],
+  "brandconfig": ["Overview", "Brand Config"],
+  "backend":     ["Overview", "Backend"],
+  "settings":    ["Overview", "Settings"],
+  "corporate":   ["Overview", "Corporate"],
+  "master":      ALL_NAV_LABELS,         // /master — shows everything
+};
+
 const PINNED_KEY = "admin:pinned-nav";
 
 function usePinned() {
@@ -56,6 +85,21 @@ export function AdminSidebar() {
   const [query, setQuery] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const { pinned, toggle: togglePin } = usePinned();
+
+  const sectionLabel = (() => {
+    const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
+    return SECTION_LABELS[seg] ?? "Admin Management";
+  })();
+
+  // Only show nav sections relevant to the current route segment
+  const visibleNavLabels = (() => {
+    const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
+    return SEGMENT_TO_NAV_LABELS[seg] ?? ["Overview", "Admin"];
+  })();
+
+  // Master Control is only shown when user has access to 2+ sections (or is admin)
+  const canSeeMasterControl = !!staff?.isAdmin || role === "admin" ||
+    (staff?.accessible?.length ?? 0) >= 2;
 
   const { data: siteSettings } = useQuery({
     queryKey: ["site-settings-admin-sidebar"],
@@ -113,9 +157,12 @@ export function AdminSidebar() {
   const currentPath = location.pathname;
   const isActive = (path: string) => {
     const cleanPath = path.split("?")[0];
-    return cleanPath === "/origin"
-      ? currentPath === "/origin"
-      : currentPath.startsWith(cleanPath);
+    if (cleanPath === "/") return currentPath === "/";
+    // For section landing pages that are exact (e.g. "/admin", "/seo"),
+    // match exactly so they don't stay lit on every sub-page
+    const isLandingPage = !cleanPath.includes("/", 1) || cleanPath === "/admin" || cleanPath === "/seo" || cleanPath === "/affiliate" || cleanPath === "/brandconfig" || cleanPath === "/backend" || cleanPath === "/settings" || cleanPath === "/corporate" || cleanPath === "/master";
+    if (isLandingPage) return currentPath === cleanPath || currentPath === cleanPath + "/";
+    return currentPath.startsWith(cleanPath);
   };
 
   const isChildActive = (childUrl: string) => {
@@ -126,7 +173,7 @@ export function AdminSidebar() {
   };
 
   const getBadge = (url: string) =>
-    url === "/origin/support" && openSupportCount > 0 ? openSupportCount : null;
+    url === "/admin/support" && openSupportCount > 0 ? openSupportCount : null;
 
   // Auto-open the group containing the active route.
   useEffect(() => {
@@ -150,6 +197,8 @@ export function AdminSidebar() {
     const hasAnyGrant = (staff?.accessible?.length ?? 0) > 0;
     const sectionFiltered = items.filter((i) => {
       if (isAdmin) return true;
+      // Master Control item: require 2+ accessible sections
+      if (i.url === "/master") return canSeeMasterControl;
       if (i.section) return staff?.hasAccess(i.section) ?? false;
       // No section assigned — fall back to legacy rule
       return hasAnyGrant ? false : !i.adminOnly;
@@ -217,7 +266,7 @@ export function AdminSidebar() {
                 )}
               </span>
             ) : (
-              <NavLink to={item.url} end={item.url === "/origin"} onClick={closeOnMobile}>
+              <NavLink to={item.url} end={item.url === "/"} onClick={closeOnMobile}>
                 <item.icon className="shrink-0 !size-[15px]" />
                 <span className="truncate">{item.title}</span>
                 {badge != null && !collapsed && (
@@ -282,19 +331,19 @@ export function AdminSidebar() {
             <img
               src={logoUrl}
               alt={siteName}
-              className={`w-8 h-8 ${logoShapeClass} object-cover shrink-0 ring-1 ring-border/40`}
+              className="w-6 h-6 rounded object-contain shrink-0"
             />
           ) : siteIconUrl ? (
             <img
               src={siteIconUrl}
               alt={siteName}
-              className={`w-8 h-8 ${logoShapeClass} object-cover shrink-0 ring-1 ring-border/40`}
+              className="w-6 h-6 rounded object-contain shrink-0"
             />
           ) : (
             <div
-              className={`relative w-8 h-8 ${logoShapeClass} bg-gradient-to-br from-primary via-primary to-primary/40 flex items-center justify-center shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)] shrink-0`}
+              className="w-6 h-6 rounded bg-gradient-to-br from-primary to-primary/40 flex items-center justify-center shrink-0"
             >
-              <span className="text-primary-foreground font-bold text-sm">
+              <span className="text-primary-foreground font-bold text-[10px]">
                 {(siteName || "A").charAt(0).toUpperCase()}
               </span>
             </div>
@@ -302,10 +351,10 @@ export function AdminSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <h2 className="font-display text-sm font-bold text-foreground leading-tight tracking-tight">
-                Control Center
+                Control Panel
               </h2>
               <p className="text-[10px] text-muted-foreground leading-tight uppercase tracking-wider">
-                {role === "moderator" ? "Moderator" : "Admin"}
+                {sectionLabel}
               </p>
             </div>
           )}
@@ -343,6 +392,7 @@ export function AdminSidebar() {
         )}
 
         {adminNav.map((section) => {
+          if (!visibleNavLabels.includes(section.label)) return null;
           const filtered = filterItems(section.items);
           if (filtered.length === 0) return null;
           return (

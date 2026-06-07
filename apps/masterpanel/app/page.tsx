@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { redirect } from "next/navigation";
+import MasterPanelShell from "./_master-shell";
 export default function RootPage() {
-  redirect("/origin");
+  return <MasterPanelShell />;
 }

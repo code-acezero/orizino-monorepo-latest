@@ -255,7 +255,7 @@ const AdminCouriers: React.FC = () => {
         </div>
       </div>
 
-      <TabsWithParam defaultTab="pathao" basePath="/origin/couriers">
+      <TabsWithParam defaultTab="pathao" basePath="/admin/couriers">
         <TabsList>
           <TabsTrigger value="pathao">Pathao</TabsTrigger>
           <TabsTrigger value="steadfast">Steadfast</TabsTrigger>

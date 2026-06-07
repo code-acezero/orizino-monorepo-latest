@@ -384,7 +384,7 @@ const AdminShowcase = () => {
         </CardContent>
       </Card>
 
-      <TabsWithParam defaultTab="slides" basePath="/origin/showcase">
+      <TabsWithParam defaultTab="slides" basePath="/admin/showcase">
         <TabsList>
           <TabsTrigger value="slides" className="flex items-center gap-1"><Layers className="w-4 h-4" /> Slides</TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1"><Settings2 className="w-4 h-4" /> Settings</TabsTrigger>

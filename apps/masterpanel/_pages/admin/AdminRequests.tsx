@@ -64,7 +64,7 @@ const AdminRequests = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-display font-bold">Product Requests</h1>
 
-      <TabsWithParam defaultTab="requests" basePath="/origin/requests" className="space-y-4">
+      <TabsWithParam defaultTab="requests" basePath="/admin/requests" className="space-y-4">
         <TabsList>
           <TabsTrigger value="requests">
             Product Requests

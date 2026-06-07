@@ -90,7 +90,7 @@ const AdminTracking: React.FC = () => {
   useEffect(() => { setTab(urlTab); }, [urlTab]);
   const handleTabChange = (v: string) => {
     setTab(v);
-    navigate(`/origin/tracking?tab=${v}`);
+    navigate(`/seo/tracking?tab=${v}`);
   };
   const [fbPixel, setFbPixel] = useState<FacebookPixelConfig>(defaultFBPixel);
   const [googleAds, setGoogleAds] = useState<GoogleAdsConfig>(defaultGoogleAds);

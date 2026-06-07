@@ -116,45 +116,45 @@ const AdminLiveActivity = () => {
         id: `order-${o.id}`, kind: "order",
         title: `New order #${o.order_number || o.id.slice(0, 8)}`,
         description: `${fmtMoney(o.total_amount)} • ${o.status}`,
-        href: `/origin/orders?id=${o.id}`, created_at: o.created_at,
+        href: `/admin/orders?id=${o.id}`, created_at: o.created_at,
       }));
       profiles.data?.forEach((p: any) => merged.push({
         id: `user-${p.id}`, kind: "user",
         title: p.full_name || "New customer registered",
-        href: `/origin/customers?id=${p.id}`, created_at: p.created_at,
+        href: `/admin/customers?id=${p.id}`, created_at: p.created_at,
       }));
       support.data?.forEach((s: any) => merged.push({
         id: `support-${s.id}`, kind: "support",
         title: s.subject || `New ${s.type || "chat"} request`,
-        description: s.status, href: `/origin/support?c=${s.id}`, created_at: s.created_at,
+        description: s.status, href: `/admin/support?c=${s.id}`, created_at: s.created_at,
       }));
       reviews.data?.forEach((r: any) => merged.push({
         id: `review-${r.id}`, kind: "review",
         title: r.title || "New review submitted",
         description: `${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}`,
-        href: `/origin/reviews`, created_at: r.created_at,
+        href: `/admin/reviews`, created_at: r.created_at,
       }));
       products.data?.forEach((p: any) => merged.push({
         id: `product-${p.id}`, kind: "product",
         title: `Product added: ${p.name}`,
-        href: `/origin/products?slug=${p.slug}`, created_at: p.created_at,
+        href: `/admin/products?slug=${p.slug}`, created_at: p.created_at,
       }));
       returns.data?.forEach((r: any) => merged.push({
         id: `return-${r.id}`, kind: "return",
         title: "Return requested",
         description: r.reason || r.status,
-        href: `/origin/returns`, created_at: r.created_at,
+        href: `/admin/returns`, created_at: r.created_at,
       }));
       campaigns.data?.forEach((c: any) => merged.push({
         id: `campaign-${c.id}`, kind: "campaign",
         title: c.name || "Email campaign",
         description: `${c.status}${c.sent_count ? ` • ${c.sent_count} sent` : ""}`,
-        href: `/origin/email-campaigns`, created_at: c.created_at,
+        href: `/seo/email-campaigns`, created_at: c.created_at,
       }));
       notifs.data?.forEach((n: any) => merged.push({
         id: `notif-${n.id}`, kind: "notification",
         title: n.title, description: n.type,
-        href: `/origin/announcements`, created_at: n.created_at,
+        href: `/seo/announcements`, created_at: n.created_at,
       }));
       pageViews.data?.forEach((pv: any) => {
         if (pv.event_type === "page_view") merged.push({
@@ -188,16 +188,16 @@ const AdminLiveActivity = () => {
     if (!isLive) return;
 
     const handlers: Array<{ table: string; map: (row: any) => ActivityEvent | null }> = [
-      { table: "orders", map: (o) => ({ id: `order-${o.id}`, kind: "order", title: `New order #${o.order_number || o.id.slice(0, 8)}`, description: `${fmtMoney(o.total_amount)} • ${o.status}`, href: `/origin/orders?id=${o.id}`, created_at: o.created_at }) },
-      { table: "profiles", map: (p) => ({ id: `user-${p.id}`, kind: "user", title: p.full_name || "New customer registered", href: `/origin/customers?id=${p.id}`, created_at: p.created_at }) },
-      { table: "support_conversations", map: (s) => ({ id: `support-${s.id}`, kind: "support", title: s.subject || `New ${s.type || "chat"} request`, description: s.status, href: `/origin/support?c=${s.id}`, created_at: s.created_at }) },
-      { table: "support_messages", map: (m) => m.sender_type === "user" ? ({ id: `sm-${m.id}`, kind: "support_msg", title: "Customer replied in support", description: (m.content || "").slice(0, 80), href: `/origin/support?c=${m.conversation_id}`, created_at: m.created_at }) : null },
-      { table: "reviews", map: (r) => ({ id: `review-${r.id}`, kind: "review", title: r.title || "New review submitted", description: `${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}`, href: `/origin/reviews`, created_at: r.created_at }) },
-      { table: "products", map: (p) => ({ id: `product-${p.id}`, kind: "product", title: `Product added: ${p.name}`, href: `/origin/products?slug=${p.slug}`, created_at: p.created_at }) },
-      { table: "categories", map: (c) => ({ id: `cat-${c.id}`, kind: "category", title: `Category added: ${c.name}`, href: `/origin/categories`, created_at: c.created_at }) },
-      { table: "return_requests", map: (r) => ({ id: `return-${r.id}`, kind: "return", title: "Return requested", description: r.reason || r.status, href: `/origin/returns`, created_at: r.created_at }) },
-      { table: "email_campaigns", map: (c) => ({ id: `campaign-${c.id}`, kind: "campaign", title: c.name || "Email campaign", description: c.status, href: `/origin/email-campaigns`, created_at: c.created_at }) },
-      { table: "notifications", map: (n) => n.user_id ? null : ({ id: `notif-${n.id}`, kind: "notification", title: n.title, description: n.type, href: `/origin/announcements`, created_at: n.created_at }) },
+      { table: "orders", map: (o) => ({ id: `order-${o.id}`, kind: "order", title: `New order #${o.order_number || o.id.slice(0, 8)}`, description: `${fmtMoney(o.total_amount)} • ${o.status}`, href: `/admin/orders?id=${o.id}`, created_at: o.created_at }) },
+      { table: "profiles", map: (p) => ({ id: `user-${p.id}`, kind: "user", title: p.full_name || "New customer registered", href: `/admin/customers?id=${p.id}`, created_at: p.created_at }) },
+      { table: "support_conversations", map: (s) => ({ id: `support-${s.id}`, kind: "support", title: s.subject || `New ${s.type || "chat"} request`, description: s.status, href: `/admin/support?c=${s.id}`, created_at: s.created_at }) },
+      { table: "support_messages", map: (m) => m.sender_type === "user" ? ({ id: `sm-${m.id}`, kind: "support_msg", title: "Customer replied in support", description: (m.content || "").slice(0, 80), href: `/admin/support?c=${m.conversation_id}`, created_at: m.created_at }) : null },
+      { table: "reviews", map: (r) => ({ id: `review-${r.id}`, kind: "review", title: r.title || "New review submitted", description: `${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}`, href: `/admin/reviews`, created_at: r.created_at }) },
+      { table: "products", map: (p) => ({ id: `product-${p.id}`, kind: "product", title: `Product added: ${p.name}`, href: `/admin/products?slug=${p.slug}`, created_at: p.created_at }) },
+      { table: "categories", map: (c) => ({ id: `cat-${c.id}`, kind: "category", title: `Category added: ${c.name}`, href: `/admin/categories`, created_at: c.created_at }) },
+      { table: "return_requests", map: (r) => ({ id: `return-${r.id}`, kind: "return", title: "Return requested", description: r.reason || r.status, href: `/admin/returns`, created_at: r.created_at }) },
+      { table: "email_campaigns", map: (c) => ({ id: `campaign-${c.id}`, kind: "campaign", title: c.name || "Email campaign", description: c.status, href: `/seo/email-campaigns`, created_at: c.created_at }) },
+      { table: "notifications", map: (n) => n.user_id ? null : ({ id: `notif-${n.id}`, kind: "notification", title: n.title, description: n.type, href: `/seo/announcements`, created_at: n.created_at }) },
       { table: "page_analytics", map: (pv) => pv.event_type === "page_view" ? ({ id: `pv-${pv.id}`, kind: "page_view", title: `Visitor on ${pv.page}`, meta: pv.session_id?.slice(0, 8), created_at: pv.created_at }) : null },
     ];
 

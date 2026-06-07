@@ -3,12 +3,12 @@ import { useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
 
 const GO_MAP: Record<string, string> = {
-  o: "/origin/orders",
-  p: "/origin/products",
-  d: "/origin",
-  s: "/origin/support",
-  u: "/origin/users",
-  c: "/origin/categories",
+  o: "/admin/orders",
+  p: "/admin/products",
+  d: "/",
+  s: "/admin/support",
+  u: "/admin/customers",
+  c: "/admin/categories",
 };
 
 function isTypingTarget(el: EventTarget | null) {

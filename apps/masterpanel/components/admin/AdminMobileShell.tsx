@@ -43,6 +43,7 @@ const AdminMobileShell: React.FC = () => {
 
   // Phone (<640px) gets fewer bottom-tab slots than tablet
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
     const mql = window.matchMedia("(max-width: 639px)");
     const update = () => setIsPhone(mql.matches);
     update();
@@ -98,14 +99,30 @@ const AdminMobileShell: React.FC = () => {
 
   const pageMeta = useMemo(() => {
     const match = allAdminItems.find((i) =>
-      i.url === "/origin"
-        ? location.pathname === "/origin"
+      i.url === "/"
+        ? location.pathname === "/"
         : location.pathname.startsWith(i.url)
     );
     return match ?? { title: "Admin", description: "" };
   }, [location.pathname]);
 
-  const isRoot = location.pathname === "/origin";
+  const isRoot = location.pathname === "/";
+
+  const mobileSectionLabel = (() => {
+    const seg = location.pathname.replace(/\/+$/, "").split("/")[1] ?? "";
+    const map: Record<string, string> = {
+      "":          "Master Panel",
+      "admin":     "Sales Management",
+      "seo":       "SEO Management",
+      "affiliate": "Affiliate Hub",
+      "brandconfig": "Branding Config",
+      "backend":   "Backend Controls",
+      "settings":  "Site Settings",
+      "corporate": "Corporate",
+      "master":    "All Sections",
+    };
+    return map[seg] ?? "Admin";
+  })();
   const currentPath = location.pathname;
 
   const greeting = useMemo(() => {
@@ -118,7 +135,7 @@ const AdminMobileShell: React.FC = () => {
   }, []);
 
   const isPrimaryActive = (url: string) =>
-    url === "/origin" ? currentPath === "/origin" : currentPath.startsWith(url);
+    url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
   const filterItems = (items: AdminNavItem[]) => {
     const byRole = role === "moderator" ? items.filter((i) => !i.adminOnly) : items;
@@ -253,7 +270,7 @@ const AdminMobileShell: React.FC = () => {
                           ) : (
                             <NavLink
                               to={item.url}
-                              end={item.url === "/origin"}
+                              end={item.url === "/"}
                               className={`flex items-center gap-3 h-11 px-3 rounded-2xl text-[14px] transition active:scale-[0.99] ${
                                 active
                                   ? "bg-primary/10 text-primary font-semibold"
@@ -319,7 +336,7 @@ const AdminMobileShell: React.FC = () => {
 
         <div className="flex-1 min-w-0 px-1">
           <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70 leading-none">
-            {isRoot ? greeting : "Admin"}
+            {isRoot ? greeting : mobileSectionLabel}
           </p>
           <p className="text-[15px] font-semibold text-foreground truncate leading-tight mt-0.5">
             {isRoot ? `Hi, ${firstName}` : pageMeta.title}
@@ -417,7 +434,7 @@ const AdminMobileShell: React.FC = () => {
       {!isRoot && (
         <section className="relative z-10 px-4 pt-1 pb-2">
           <button
-            onClick={() => navigate("/origin")}
+            onClick={() => navigate("/")}
             className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-card/70 backdrop-blur-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground active:scale-95 transition"
           >
             <ArrowLeft className="w-3 h-3" />

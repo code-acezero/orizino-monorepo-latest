@@ -172,7 +172,7 @@ const AdminCourierManagement: React.FC = () => {
         <p className="text-muted-foreground mt-1">Configure pickup hubs and dynamic shipping fees per provider.</p>
       </div>
 
-      <TabsWithParam defaultTab="hubs" basePath="/origin/courier-management">
+      <TabsWithParam defaultTab="hubs" basePath="/admin/courier-management">
         <TabsList>
           <TabsTrigger value="hubs"><Building2 className="w-4 h-4 mr-2" /> Hubs</TabsTrigger>
           <TabsTrigger value="pricing"><DollarSign className="w-4 h-4 mr-2" /> Pricing Rules</TabsTrigger>

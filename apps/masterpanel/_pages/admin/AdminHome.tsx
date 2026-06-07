@@ -225,7 +225,7 @@ const AdminHome = () => {
   const [sectionOrder, setSectionOrder] = useState(defaultSectionOrder);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [sectionSubTab, setSectionSubTab] = useState("order");
-  const [activeTab, setActiveTab] = useTabParam("dashboard", "/origin/home");
+  const [activeTab, setActiveTab] = useTabParam("dashboard", "/brandconfig/home");
   const [selectedTheme, setSelectedTheme] = useState("default");
   const [selectedMode, setSelectedMode] = useState("dark");
   const [featCatSearch, setFeatCatSearch] = useState("");

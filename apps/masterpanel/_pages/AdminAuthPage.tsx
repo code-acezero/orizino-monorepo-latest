@@ -17,7 +17,7 @@ export default function AdminAuthPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || "/origin";
+  const from = (location.state as any)?.from || "/";
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");

@@ -82,7 +82,7 @@ export default function AdminEmailProvider() {
   } | null>(null);
   const [testTo, setTestTo] = useState("");
   const [domains, setDomains] = useState<any[] | null>(null);
-  const [epTab, setEpTab] = useTabParam("sender", "/origin/email-provider");
+  const [epTab, setEpTab] = useTabParam("sender", "/seo/email-provider");
 
   // hydrate form once settings load
   if (data && !form) {

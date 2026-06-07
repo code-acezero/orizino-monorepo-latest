@@ -19,7 +19,7 @@ export default function AdminEmailCampaigns() {
 
   const createMut = useMutation({
     mutationFn: () => create({ data: { name: "Untitled campaign", subject: "", html: "<h1>Hello</h1>", audience_type: "subscribers", status: "draft" } }),
-    onSuccess: (row: any) => { qc.invalidateQueries({ queryKey: ["campaigns"] }); window.location.href = `/origin/email-campaigns/${row.id}`; },
+    onSuccess: (row: any) => { qc.invalidateQueries({ queryKey: ["campaigns"] }); window.location.href = `/seo/email-campaigns/${row.id}`; },
   });
 
   return (
@@ -35,7 +35,7 @@ export default function AdminEmailCampaigns() {
         {campaigns.map((c: any) => (
           <div key={c.id} className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 transition-colors">
             <div className="flex items-start justify-between gap-2">
-              <Link to={`/origin/email-campaigns/${c.id}`} className="font-medium hover:underline truncate">{c.name}</Link>
+              <Link to={`/seo/email-campaigns/${c.id}`} className="font-medium hover:underline truncate">{c.name}</Link>
               <Badge variant={c.status === "sent" ? "default" : c.status === "scheduled" ? "secondary" : c.status === "sending" ? "secondary" : "outline"}>{c.status}</Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1 truncate">{c.subject || "(no subject)"}</p>

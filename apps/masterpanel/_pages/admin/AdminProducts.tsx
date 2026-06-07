@@ -74,7 +74,7 @@ const AdminProducts = () => {
   }, [urlTab]);
   const handleTabChange = (v: string) => {
     setActiveMainTab(v);
-    navigate(`/origin/products?tab=${v}`);
+    navigate(`/admin/products?tab=${v}`);
   };
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const notifyProductsFn = useServerFn(notifyAboutProducts);

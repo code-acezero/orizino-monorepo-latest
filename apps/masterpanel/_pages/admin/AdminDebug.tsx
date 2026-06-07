@@ -119,7 +119,7 @@ const AdminDebug: React.FC = () => {
     })();
   }, []);
 
-  const [tab] = useTabParam("push", "/origin/debug");
+  const [tab] = useTabParam("push", "/backend/debug");
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-8 max-w-5xl space-y-6">

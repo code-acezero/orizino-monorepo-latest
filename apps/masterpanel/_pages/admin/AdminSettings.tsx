@@ -217,7 +217,7 @@ const AdminSettings = () => {
     }));
   };
 
-  const [tab, setTab] = useTabParam("general", "/origin/settings");
+  const [tab, setTab] = useTabParam("general", "/settings");
 
   return (
     <div className="space-y-6">
@@ -225,10 +225,10 @@ const AdminSettings = () => {
         <h1 className="text-3xl font-display font-bold tracking-tight">Site Settings</h1>
         <p className="text-sm text-muted-foreground">
           Identity, contact, status and localization. Visual branding lives in{" "}
-          <a href="/origin/branding" className="text-primary hover:underline">Branding</a>
+          <a href="/brandconfig" className="text-primary hover:underline">Branding</a>
           {" · "}
           checkout & catalog defaults live in{" "}
-          <a href="/origin/products?tab=commerce" className="text-primary hover:underline">Products → Commerce</a>.
+          <a href="/admin/products?tab=commerce" className="text-primary hover:underline">Products → Commerce</a>.
         </p>
       </div>
 

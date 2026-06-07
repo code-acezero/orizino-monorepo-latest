@@ -144,7 +144,7 @@ const HubSidebar: React.FC<{ tab: TabId; setTab: (t: TabId) => void }> = ({ tab,
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="sm" tooltip={collapsed ? "Back to Control Center" : undefined}
               className="h-8 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg">
-              <Link to="/origin" onClick={close}>
+              <Link to="/" onClick={close}>
                 <ArrowLeft className="shrink-0 !size-[15px]" />
                 <span className="truncate">Control Center</span>
               </Link>

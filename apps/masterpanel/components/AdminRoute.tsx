@@ -13,68 +13,49 @@ const AdminRoleContext = createContext<AdminRole>(null);
 export const useAdminRole = () => useContext(AdminRoleContext);
 
 /**
- * Maps `/origin/...` and `/affiliate-hub` paths to the staff_sections key
- * the user must have access to. Keep in sync with admin-nav.ts.
- * Paths not listed here are admin-only.
+ * Maps new section-based paths to the staff_sections key.
+ * Keep in sync with admin-nav.ts section URL structure.
+ * Paths not listed here are accessible to all authenticated staff.
  */
 const PATH_TO_SECTION: Array<[RegExp, string]> = [
-  // catalog
-  [/^\/products(\/|$|\?)/, "products"],
-  [/^\/categories(\/|$|\?)/, "products"],
-  [/^\/reviews(\/|$|\?)/, "products"],
-  [/^\/requests(\/|$|\?)/, "products"],
-  [/^\/showcase(\/|$|\?)/, "products"],
-  // sales / fulfillment
-  [/^\/orders(\/|$|\?)/, "orders"],
-  [/^\/returns(\/|$|\?)/, "orders"],
-  [/^\/coupons(\/|$|\?)/, "orders"],
-  [/^\/delivery-offers(\/|$|\?)/, "orders"],
-  [/^\/couriers(\/|$|\?)/, "orders"],
-  [/^\/courier-management(\/|$|\?)/, "orders"],
-  [/^\/shipping(\/|$|\?)/, "orders"],
-  [/^\/pathao(\/|$|\?)/, "orders"],
-  [/^\/payment-gateways(\/|$|\?)/, "orders"],
-  [/^\/user-promos(\/|$|\?)/, "orders"],
-  // customers / marketing
-  [/^\/customers(\/|$|\?)/, "customers"],
-  [/^\/support(\/|$|\?)/, "customers"],
-  [/^\/announcements(\/|$|\?)/, "customers"],
-  [/^\/email-/, "customers"],
-  [/^\/affiliate-hub(\/|$|\?)/, "affiliate"],
-  // analytics
-  [/^\/customer-analytics(\/|$|\?)/, "analytics"],
-  [/^\/live-activity(\/|$|\?)/, "analytics"],
-  // storefront / portfolio
-  [/^\/landing(\/|$|\?)/, "portfolio"],
-  [/^\/home(\/|$|\?)/, "portfolio"],
-  [/^\/cms-pages(\/|$|\?)/, "portfolio"],
-  [/^\/banners(\/|$|\?)/, "storefront_ui"],
-  [/^\/footer(\/|$|\?)/, "storefront_ui"],
-  [/^\/mobile-ui(\/|$|\?)/, "storefront_ui"],
-  [/^\/branding(\/|$|\?)/, "storefront_ui"],
-  [/^\/appearance(\/|$|\?)/, "storefront_ui"],
-  // growth
-  [/^\/seo(\/|$|\?)/, "seo"],
-  [/^\/tracking(\/|$|\?)/, "seo"],
-  [/^\/ai-settings(\/|$|\?)/, "ai"],
-  [/^\/recommendations(\/|$|\?)/, "ai"],
-  [/^\/call-settings(\/|$|\?)/, "settings"],
-  [/^\/telegram(\/|$|\?)/, "settings"],
-  // corporate
-  [/^\/corporate(\/|$|\?)/, "employees"],
-  [/^\/teams(\/|$|\?)/, "employees"],
-  [/^\/employees(\/|$|\?)/, "employees"],
-  // system
-  [/^\/settings(\/|$|\?)/, "settings"],
-  [/^\/db-health(\/|$|\?)/, "settings"],
-  [/^\/debug(\/|$|\?)/, "settings"],
+  // /admin section — products
+  [/^\/admin\/(products|categories|reviews|requests|showcase)/, "products"],
+  // /admin section — orders & fulfillment
+  [/^\/admin\/(orders|returns|coupons|delivery-offers|couriers|courier-management|shipping|pathao|payment-gateways|user-promos)/, "orders"],
+  // /admin section — customers & support
+  [/^\/admin\/(customers|support|announcements)/, "customers"],
+  // /admin section — analytics
+  [/^\/admin\/(customer-analytics|live-activity)/, "analytics"],
+  // /admin section — employees
+  [/^\/admin\/employees/, "employees"],
+
+  // /seo section
+  [/^\/seo/, "seo"],
+
+  // /affiliate section
+  [/^\/affiliate/, "affiliate"],
+
+  // /brandconfig section
+  [/^\/brandconfig/, "storefront_ui"],
+
+  // /backend section — admin only (settings key, no staff access typically)
+  [/^\/backend/, "settings"],
+
+  // /settings section
+  [/^\/settings/, "settings"],
+
+  // /corporate section
+  [/^\/corporate/, "employees"],
+
+  // Legacy paths (still work via rewrite passthrough)
+  [/^\/affiliate-hub/, "affiliate"],
 ];
 
 function sectionForPath(path: string): string | null {
   const cleaned = path.replace(/\/$/, "") || "/";
   if (cleaned === "/") return null;
   for (const [re, key] of PATH_TO_SECTION) {
-    if (re.test(cleaned + "/")) return key;
+    if (re.test(cleaned)) return key;
   }
   return null;
 }
@@ -112,7 +93,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!role) return false;
     if (role === "admin") return true;
     const section = sectionForPath(location.pathname);
-    if (!section) return true;
+    if (!section) return true; // dashboard, section roots without sub-path
     return staff?.hasAccess(section) ?? false;
   }, [role, location.pathname, staff]);
 
@@ -128,11 +109,10 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Not signed in — proxy.ts should have caught this, but guard client-side too
   if (!user) return <Navigate to="/auth" replace />;
 
-  // has_role RPC failed — could be DB misconfiguration; sign out and go to auth
+  // has_role RPC failed — sign out and go to auth
   if (roleError) return <Navigate to="/auth" replace />;
 
-  // Authenticated but no admin/moderator role assigned — show unauthorized page
-  // rather than redirecting to "/" which causes an infinite loop.
+  // Authenticated but no role assigned — show unauthorized page
   if (role === null) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
@@ -157,25 +137,25 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Role exists but current path not allowed for this staff member
   if (!allowed) return <Navigate to="/" replace />;
 
-  // Single-section staff: bypass dashboard and go directly to their section
+  // Single-section staff: skip dashboard, go directly to their section
   const singleSectionRedirect = (() => {
     if (!staff || role === "admin" || location.pathname !== "/") return null;
     const accessible = staff.accessible ?? [];
     if (accessible.length !== 1) return null;
     const sectionKey = accessible[0].key as string;
     const SECTION_URLS: Record<string, string> = {
-      products: "/products",
-      orders: "/orders",
-      offline_orders: "/orders",
-      customers: "/customers",
-      affiliate: "/affiliate-hub",
-      seo: "/seo",
-      storefront_ui: "/branding",
-      portfolio: "/landing",
-      ai: "/ai-settings",
-      analytics: "/customer-analytics",
-      employees: "/employees",
-      settings: "/settings",
+      products:       "/admin/products",
+      orders:         "/admin/orders",
+      offline_orders: "/admin/orders",
+      customers:      "/admin/customers",
+      affiliate:      "/affiliate",
+      seo:            "/seo",
+      storefront_ui:  "/brandconfig",
+      portfolio:      "/brandconfig/landing",
+      ai:             "/settings/ai-settings",
+      analytics:      "/admin/customer-analytics",
+      employees:      "/corporate/employees",
+      settings:       "/settings",
     };
     return SECTION_URLS[sectionKey] ?? null;
   })();

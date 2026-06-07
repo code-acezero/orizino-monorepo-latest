@@ -83,13 +83,13 @@ const NotFound = () => {
           className="flex flex-wrap gap-3 justify-center mt-6"
         >
           <Link
-            to="/home"
+            to="/brandconfig/home"
             className="btn-pill bg-gradient-primary text-primary-foreground font-semibold px-6 py-3 flex items-center gap-2 hover:scale-105 transition-transform"
           >
             <Home className="w-4 h-4" /> Go Home
           </Link>
           <Link
-            to="/inventory"
+            to="/admin/products"
             className="btn-pill glass text-foreground font-semibold px-6 py-3 flex items-center gap-2 hover:scale-105 transition-transform"
           >
             <Search className="w-4 h-4" /> Browse Shop

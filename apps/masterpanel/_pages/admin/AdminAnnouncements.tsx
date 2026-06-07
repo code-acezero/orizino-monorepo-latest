@@ -593,7 +593,7 @@ const AdminAnnouncements = () => {
         </Card>
       </div>
 
-      <TabsWithParam defaultTab="announcements" basePath="/origin/announcements">
+      <TabsWithParam defaultTab="announcements" basePath="/seo/announcements">
         <TabsList>
           <TabsTrigger value="announcements" className="flex items-center gap-1"><Bell className="w-4 h-4" /> Announcements</TabsTrigger>
           <TabsTrigger value="popups" className="flex items-center gap-1"><Maximize className="w-4 h-4" /> Popups</TabsTrigger>

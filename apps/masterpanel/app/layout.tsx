@@ -39,6 +39,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            if (typeof window === 'undefined') return;
+            var _mm = window.matchMedia;
+            if (!_mm) return;
+            window.matchMedia = function(q) {
+              var r = _mm.call(window, q);
+              if (!r) { return { matches: false, media: q, onchange: null, addListener: function(){}, removeListener: function(){}, addEventListener: function(){}, removeEventListener: function(){}, dispatchEvent: function(){ return false; } }; }
+              if (typeof r.addListener !== 'function') { r.addListener = function(fn){ r.addEventListener('change', fn); }; r.removeListener = function(fn){ r.removeEventListener('change', fn); }; }
+              return r;
+            };
+          })();
+        ` }} />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
